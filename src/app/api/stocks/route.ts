@@ -1,0 +1,117 @@
+import { prisma } from "@/lib/prisma";
+import { getAuthUser, unauthorized, badRequest, ok } from "@/lib/api-utils";
+import { STOCK_FEE_RATE } from "@/lib/constants";
+import { NextRequest } from "next/server";
+
+// GET: 株一覧
+export async function GET() {
+  const stocks = await prisma.stock.findMany({
+    include: { priceHistory: { orderBy: { createdAt: "desc" }, take: 30 } },
+  });
+  return ok(
+    stocks.map((s) => ({
+      ...s,
+      currentPrice: s.currentPrice.toString(),
+      priceHistory: s.priceHistory.map((p) => ({ price: p.price.toString(), createdAt: p.createdAt })),
+    }))
+  );
+}
+
+// POST: 売買
+export async function POST(req: NextRequest) {
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
+
+  const { stockId, quantity, action } = (await req.json()) as {
+    stockId: string;
+    quantity: number;
+    action: "BUY" | "SELL" | "SHORT_SELL" | "SHORT_COVER";
+  };
+
+  if (quantity <= 0) return badRequest("数量は1以上にしてください");
+
+  const stock = await prisma.stock.findUnique({ where: { id: stockId } });
+  if (!stock) return badRequest("銘柄が見つかりません");
+
+  const totalCost = stock.currentPrice * BigInt(quantity);
+  const fee = BigInt(Math.ceil(Number(totalCost) * STOCK_FEE_RATE));
+
+  // Check short sell unlock
+  if ((action === "SHORT_SELL" || action === "SHORT_COVER") ) {
+    const unlock = await prisma.purchase.findFirst({
+      where: { userId: user.id, item: { slug: "stock-short-unlock" } },
+    });
+    if (!unlock) return badRequest("空売りポジションがアンロックされていません");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const wallet = await tx.wallet.findUnique({ where: { userId: user.id } });
+    if (!wallet) throw new Error("ウォレットが見つかりません");
+
+    const isShort = action === "SHORT_SELL" || action === "SHORT_COVER";
+    const isBuy = action === "BUY" || action === "SHORT_COVER";
+
+    if (isBuy && wallet.balance < totalCost + fee) throw new Error("残高不足");
+
+    if (isBuy) {
+      await tx.wallet.update({ where: { userId: user.id }, data: { balance: { decrement: totalCost + fee } } });
+    } else {
+      // Selling: check position
+      const pos = await tx.stockPosition.findUnique({
+        where: { userId_stockId_isShort: { userId: user.id, stockId, isShort } },
+      });
+      if (!pos || pos.quantity < quantity) throw new Error("保有数量が不足しています");
+      await tx.wallet.update({ where: { userId: user.id }, data: { balance: { increment: totalCost - fee } } });
+    }
+
+    // Fee to admin
+    const adminId = process.env.ADMIN_USER_ID;
+    if (adminId && fee > 0n) {
+      await tx.wallet.upsert({
+        where: { userId: adminId },
+        update: { balance: { increment: fee } },
+        create: { userId: adminId, balance: fee },
+      });
+    }
+
+    // Update position
+    if (isBuy) {
+      await tx.stockPosition.upsert({
+        where: { userId_stockId_isShort: { userId: user.id, stockId, isShort } },
+        update: { quantity: { increment: quantity } },
+        create: { userId: user.id, stockId, quantity, isShort, avgPrice: stock.currentPrice },
+      });
+    } else {
+      const pos = await tx.stockPosition.findUnique({
+        where: { userId_stockId_isShort: { userId: user.id, stockId, isShort } },
+      });
+      const newQty = (pos?.quantity ?? 0) - quantity;
+      if (newQty <= 0) {
+        await tx.stockPosition.delete({
+          where: { userId_stockId_isShort: { userId: user.id, stockId, isShort } },
+        });
+      } else {
+        await tx.stockPosition.update({
+          where: { userId_stockId_isShort: { userId: user.id, stockId, isShort } },
+          data: { quantity: newQty },
+        });
+      }
+    }
+
+    await tx.stockOrder.create({
+      data: { userId: user.id, stockId, type: action, quantity, price: stock.currentPrice, fee },
+    });
+    await tx.transaction.create({
+      data: {
+        type: isBuy ? "STOCK_BUY" : "STOCK_SELL",
+        amount: totalCost,
+        fee,
+        senderId: isBuy ? user.id : undefined,
+        receiverId: isBuy ? undefined : user.id,
+        memo: `${stock.name} x${quantity}`,
+      },
+    });
+  });
+
+  return ok({ message: "注文完了" });
+}

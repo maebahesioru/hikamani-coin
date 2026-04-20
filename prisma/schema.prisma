@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  discordId     String    @unique
+  username      String
+  displayName   String?
+  avatar        String?
+  email         String?
+  birthday      DateTime?
+  referralCode  String    @unique @default(cuid())
+  referredById  String?
+  referredBy    User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]    @relation("Referrals")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  wallet           Wallet?
+  sessions         Session[]
+  dailyLogins      DailyLogin[]
+  linkedAccounts   LinkedAccount[]
+  sentTransfers    Transaction[]    @relation("Sender")
+  receivedTransfers Transaction[]   @relation("Receiver")
+  purchases        Purchase[]
+  stockPositions   StockPosition[]
+  stockOrders      StockOrder[]
+  ads              Ad[]
+  bonusClaims      BonusClaim[]
+  apiKeys          ApiKey[]
+  ltcDeposits      LtcDeposit[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   BigInt   @default(0) // HKM stored as integer (no decimals)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  amount      BigInt
+  fee         BigInt          @default(0)
+  memo        String?
+  senderId    String?
+  sender      User?           @relation("Sender", fields: [senderId], references: [id])
+  receiverId  String?
+  receiver    User?           @relation("Receiver", fields: [receiverId], references: [id])
+  createdAt   DateTime        @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+enum TransactionType {
+  BONUS        // system-granted bonus
+  TRANSFER     // user-to-user gift
+  PURCHASE     // shop purchase
+  LTC_DEPOSIT  // litecoin deposit
+  STOCK_BUY
+  STOCK_SELL
+  FEE          // fee collected by admin
+}
+
+model DailyLogin {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  streak    Int      @default(1)
+  amount    BigInt
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model LinkedAccount {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  AccountProvider
+  providerId String
+  bonusPaid Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, provider])
+  @@unique([provider, providerId])
+}
+
+enum AccountProvider {
+  DISCORD
+  TWITTER
+}
+
+model BonusClaim {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      BonusType
+  amount    BigInt
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
+}
+
+enum BonusType {
+  REGISTRATION
+  DISCORD_LINK
+  TWITTER_LINK
+  REFERRAL_INVITER
+  REFERRAL_INVITEE
+  STREAK_7
+  STREAK_30
+  ANNIVERSARY
+  SURVEY
+  VIDEO_SUBMISSION
+  BUG_REPORT
+  VC_REWARD
+}
+
+model LtcDeposit {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address       String
+  ltcAmount     String       // stored as string for precision
+  jpyRate       Float        // LTC/JPY rate at time of deposit
+  hkmAmount     BigInt       // converted HKM amount
+  txHash        String?      @unique
+  status        DepositStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  confirmedAt   DateTime?
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum DepositStatus {
+  PENDING
+  CONFIRMING
+  CONFIRMED
+  FAILED
+}
+
+model ShopItem {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  description String
+  price       BigInt
+  category    String
+  recurring   Boolean    @default(false) // monthly subscription
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  purchases   Purchase[]
+}
+
+model Purchase {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId     String
+  item       ShopItem @relation(fields: [itemId], references: [id])
+  amount     BigInt
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ヒカマーズ株
+model Stock {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  description String?
+  currentPrice BigInt         @default(1000)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  priceHistory StockPrice[]
+  positions    StockPosition[]
+  orders       StockOrder[]
+}
+
+model StockPrice {
+  id        String   @id @default(cuid())
+  stockId   String
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  price     BigInt
+  createdAt DateTime @default(now())
+
+  @@index([stockId, createdAt])
+}
+
+model StockPosition {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stockId   String
+  stock     Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  quantity  Int
+  isShort   Boolean  @default(false)
+  avgPrice  BigInt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, stockId, isShort])
+}
+
+model StockOrder {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stockId   String
+  stock     Stock       @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  type      OrderType
+  quantity  Int
+  price     BigInt
+  fee       BigInt      @default(0)
+  createdAt DateTime    @default(now())
+
+  @@index([userId])
+  @@index([stockId, createdAt])
+}
+
+enum OrderType {
+  BUY
+  SELL
+  SHORT_SELL
+  SHORT_COVER
+}
+
+model Ad {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      AdType
+  content   String
+  imageUrl  String?
+  linkUrl   String?
+  startsAt  DateTime @default(now())
+  expiresAt DateTime
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+enum AdType {
+  ALL_SITES   // 全サイト表示
+  SINGLE_SITE // 1サイト表示
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key         String   @unique
+  name        String
+  allowedOrigins String[] // CORS whitelist
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
+}

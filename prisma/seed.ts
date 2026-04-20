@@ -1,0 +1,51 @@
+import { PrismaClient } from "../src/generated/prisma/client";
+
+const prisma = new PrismaClient();
+
+const shopItems = [
+  // 広告
+  { slug: "ad-all-24h", name: "24時間全サイト広告", description: "全サイトに24時間広告を表示", price: 2000n, category: "広告" },
+  { slug: "ad-single-24h", name: "24時間1サイト広告", description: "1サイトに24時間広告を表示", price: 500n, category: "広告" },
+  { slug: "ad-hide-30d", name: "各サイト広告30日非表示", description: "広告を30日間非表示", price: 1500n, category: "広告", recurring: true },
+  { slug: "ad-hide-forever", name: "各サイト広告永久非表示", description: "広告を永久に非表示", price: 15000n, category: "広告" },
+  // TwiGacha
+  { slug: "twigacha-5pack", name: "TwiGachaカードパック5枚", description: "カードパック5枚購入", price: 500n, category: "TwiGacha" },
+  { slug: "twigacha-ssr", name: "TwiGacha SSR確定1枚", description: "SSR確定カードパック", price: 700n, category: "TwiGacha" },
+  // Discord
+  { slug: "discord-booster", name: "Discordサーバーブースター権限", description: "優先スピーカー・低速モード回避", price: 3000n, category: "Discord" },
+  { slug: "discord-namecolor", name: "Discord名前色変更", description: "名前の色を変更", price: 1000n, category: "Discord", recurring: true },
+  { slug: "discord-vip", name: "Discord VIPチャンネル", description: "VIP限定雑談チャンネル解放", price: 5000n, category: "Discord", recurring: true },
+  // Proプラン
+  { slug: "mani-translate-pro", name: "Mani!?翻訳Pro", description: "翻訳Proプラン", price: 800n, category: "Proプラン", recurring: true },
+  { slug: "saens-kinmaker", name: "SAENSキンメーカー動画出力", description: "動画出力1回", price: 300n, category: "Proプラン" },
+  { slug: "illust-sagashitter-pro", name: "イラストさがしったーPro", description: "Proプラン", price: 500n, category: "Proプラン", recurring: true },
+  { slug: "narikitter-pro", name: "なりきったーPro", description: "Proプラン", price: 1000n, category: "Proプラン", recurring: true },
+  { slug: "hikafuwa-box-pro", name: "ヒカフワBOX Pro", description: "Proプラン", price: 600n, category: "Proプラン", recurring: true },
+  { slug: "hikamani-ai-pro", name: "ヒカマーなりきり・バトル・検索AI Pro", description: "Proプラン", price: 1500n, category: "Proプラン", recurring: true },
+  { slug: "takuya-voice-pro", name: "拓也さんボイスPro", description: "Proプラン", price: 1200n, category: "Proプラン", recurring: true },
+  // スポンサー
+  { slug: "sponsor-30d", name: "ポータルスポンサー30日", description: "アイコン付き30日掲載", price: 3000n, category: "スポンサー" },
+  { slug: "sponsor-forever", name: "ポータルスポンサー永久", description: "アイコン付き永久掲載", price: 50000n, category: "スポンサー" },
+  { slug: "sponsor-big-forever", name: "ポータルスポンサー大永久", description: "でっかく永久掲載", price: 150000n, category: "スポンサー" },
+  // 特別
+  { slug: "naming-rights", name: "新サイト・新機能の命名権", description: "命名権を獲得", price: 30000n, category: "特別" },
+  { slug: "twitter-repost", name: "Twitterリポスト・宣伝権", description: "1回分", price: 2000n, category: "特別" },
+  { slug: "face-voice", name: "顔写真orボイスメッセージ", description: "1個", price: 10000n, category: "特別" },
+  { slug: "twitter-followback", name: "Twitter絶対フォロバ権", description: "フォロバ確約", price: 1500n, category: "特別" },
+  // 株関連
+  { slug: "stock-short-unlock", name: "空売りポジアンロック", description: "空売りが可能に", price: 10000n, category: "ヒカマーズ株" },
+  { slug: "stock-fee-discount", name: "株手数料30日割引", description: "手数料が半額に", price: 1500n, category: "ヒカマーズ株", recurring: true },
+];
+
+async function main() {
+  for (const item of shopItems) {
+    await prisma.shopItem.upsert({
+      where: { slug: item.slug },
+      update: { name: item.name, price: item.price, description: item.description, category: item.category, recurring: item.recurring ?? false },
+      create: { ...item, recurring: item.recurring ?? false },
+    });
+  }
+  console.log(`Seeded ${shopItems.length} shop items`);
+}
+
+main().then(() => prisma.$disconnect());
