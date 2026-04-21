@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Footer } from "@/components/footer";
+import { Toaster } from "@/components/toaster";
 
 export const metadata: Metadata = {
   title: "ヒカマニコイン (HKM)",
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased flex flex-col">
         <div className="flex-1">{children}</div>
         <Footer />
+        <Toaster />
       </body>
     </html>
   );

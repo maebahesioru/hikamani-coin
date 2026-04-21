@@ -3,6 +3,8 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { SessionProvider } from "@/components/session-provider";
 import { Navbar } from "@/components/navbar";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { showToast } from "@/components/toaster";
 import { redirect } from "next/navigation";
 
 interface ShopItem {
@@ -18,7 +20,7 @@ interface ShopItem {
 function ShopContent() {
   const { status } = useSession();
   const [items, setItems] = useState<ShopItem[]>([]);
-  const [msg, setMsg] = useState("");
+  const [confirm, setConfirm] = useState<{ slug: string; name: string; price: string } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
@@ -26,25 +28,32 @@ function ShopContent() {
   }, [status]);
 
   const buy = async (slug: string) => {
-    setMsg("");
     const res = await fetch("/api/shop", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ itemSlug: slug }),
     });
-    if (res.ok) setMsg("購入完了！");
-    else {
-      const data = await res.json();
-      setMsg(data.error || "購入に失敗しました");
+    const data = await res.json();
+    if (res.ok) {
+      showToast("購入完了！");
+    } else {
+      showToast(data.error || "購入に失敗しました", "error");
     }
+    setConfirm(null);
   };
 
   const categories = [...new Set(items.map((i) => i.category))];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      <ConfirmDialog
+        open={!!confirm}
+        title={`${confirm?.name}`}
+        message={`${Number(confirm?.price).toLocaleString()} HKM を消費して購入しますか？`}
+        onConfirm={() => confirm && buy(confirm.slug)}
+        onCancel={() => setConfirm(null)}
+      />
       <h1 className="mb-6 text-2xl font-bold">ショップ</h1>
-      {msg && <p className="mb-4 rounded bg-[var(--card)] p-3 text-sm">{msg}</p>}
       {categories.map((cat) => (
         <div key={cat} className="mb-8">
           <h2 className="mb-3 text-lg font-semibold text-[var(--accent)]">{cat}</h2>
@@ -65,7 +74,7 @@ function ShopContent() {
                     </div>
                   </div>
                   <button
-                    onClick={() => buy(item.slug)}
+                    onClick={() => setConfirm({ slug: item.slug, name: item.name, price: item.price })}
                     className="mt-3 w-full rounded bg-[var(--accent)] py-1.5 text-sm font-semibold text-black hover:bg-[var(--accent-dim)]"
                   >
                     購入
