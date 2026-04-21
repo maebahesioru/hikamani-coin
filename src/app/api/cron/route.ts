@@ -10,16 +10,32 @@ export async function GET(req: NextRequest) {
   }
 
   const results: Record<string, unknown> = {};
+  const type = req.nextUrl.searchParams.get("type") || "all";
 
-  // 1. 株価更新
-  try {
-    const res = await fetch(`${process.env.AUTH_URL}/api/stocks/update-prices`, {
-      method: "POST",
-      headers: { "x-cron-secret": process.env.CRON_SECRET || "" },
-    });
-    results.stockUpdate = await res.json();
-  } catch (e) {
-    results.stockUpdateError = String(e);
+  // 1. 株価更新（Yahoo Realtimeのみ、軽い）
+  if (type === "prices" || type === "all") {
+    try {
+      const res = await fetch(`${process.env.AUTH_URL}/api/stocks/update-prices`, {
+        method: "POST",
+        headers: { "x-cron-secret": process.env.CRON_SECRET || "" },
+      });
+      results.stockUpdate = await res.json();
+    } catch (e) {
+      results.stockUpdateError = String(e);
+    }
+  }
+
+  // 2. プロフィール監視（FXTwitter、重い）
+  if (type === "profiles" || type === "all") {
+    try {
+      const res = await fetch(`${process.env.AUTH_URL}/api/stocks/update-prices?profilesOnly=true`, {
+        method: "POST",
+        headers: { "x-cron-secret": process.env.CRON_SECRET || "" },
+      });
+      results.profileUpdate = await res.json();
+    } catch (e) {
+      results.profileUpdateError = String(e);
+    }
   }
 
   // 2. 期限切れ賭けマーケットを自動解決（引き分け扱い＝全額返金）

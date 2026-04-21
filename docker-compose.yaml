@@ -50,7 +50,8 @@ services:
       - APP_URL=http://app:3000
     command: >
       sh -c "
-        echo '*/30 * * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" $$APP_URL/api/cron > /proc/1/fd/1 2>&1' | crontab - &&
+        echo '*/5 * * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" $$APP_URL/api/cron?type=prices > /proc/1/fd/1 2>&1
+*/15 * * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" $$APP_URL/api/cron?type=profiles > /proc/1/fd/1 2>&1' | crontab - &&
         crond -f -l 2
       "
 
