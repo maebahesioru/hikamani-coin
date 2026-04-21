@@ -19,7 +19,10 @@ interface BetMarket {
   question: string;
   description: string | null;
   category: string;
+  categoryLabel: string;
   stockName: string | null;
+  stockPrice: string | null;
+  profile: { name: string; avatarUrl: string | null; followers: number; verified: boolean; description: string } | null;
   endsAt: string;
   resolved: boolean;
   outcome: boolean | null;
@@ -218,16 +221,38 @@ function StocksContent() {
         <div className="grid gap-4">
           {markets.map((m) => (
             <div key={m.id} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
-              <div className="mb-1 flex items-start justify-between">
-                <div>
-                  {m.stockName && <span className="mr-2 rounded bg-[var(--accent)] px-2 py-0.5 text-xs font-semibold text-black">{m.stockName}</span>}
-                  <span className="rounded bg-[var(--border)] px-2 py-0.5 text-xs">{m.category}</span>
+              {/* Header: profile + category */}
+              <div className="mb-3 flex items-start gap-3">
+                {m.profile?.avatarUrl && (
+                  <img src={m.profile.avatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-full" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    {m.profile?.name && (
+                      <span className="font-bold text-sm">
+                        {m.profile.name}
+                        {m.profile.verified && <span className="ml-1 text-[#1DA1F2] text-xs">✓</span>}
+                      </span>
+                    )}
+                    {m.stockName && <span className="text-xs text-[var(--text-dim)]">@{m.stockName}</span>}
+                    {m.profile?.followers != null && (
+                      <span className="text-xs text-[var(--text-dim)]">{m.profile.followers.toLocaleString()}フォロワー</span>
+                    )}
+                    <span className="rounded bg-[var(--accent)] px-2 py-0.5 text-xs font-semibold text-black">{m.categoryLabel}</span>
+                    {m.stockPrice && (
+                      <span className="text-xs text-[var(--text-dim)]">株価: {Number(m.stockPrice).toLocaleString()} HKM</span>
+                    )}
+                  </div>
+                  {m.profile?.description && (
+                    <p className="text-xs text-[var(--text-dim)] line-clamp-1">{m.profile.description}</p>
+                  )}
                 </div>
-                <span className="text-xs text-[var(--text-dim)]">
+                <span className="shrink-0 text-xs text-[var(--text-dim)]">
                   {new Date(m.endsAt).toLocaleDateString("ja-JP")} まで
                 </span>
               </div>
-              <h3 className="mb-3 mt-2 text-lg font-bold">{m.question}</h3>
+
+              <h3 className="mb-3 text-base font-bold">{m.question}</h3>
               {m.description && <p className="mb-3 text-xs text-[var(--text-dim)]">{m.description}</p>}
 
               {/* Odds bar */}

@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, badRequest, ok } from "@/lib/api-utils";
+import { redis } from "@/lib/redis";
 import { NextRequest } from "next/server";
+
+const CATEGORY_LABEL: Record<string, string> = {
+  name_change: "名前変更",
+  icon_change: "アイコン変更",
+  profile_change: "プロフィール変更",
+  lock_change: "鍵垢",
+  tweet_momentum: "ツイート勢い",
+  general: "一般",
+};
 
 // GET: マーケット一覧
 export async function GET(req: NextRequest) {
@@ -11,12 +21,28 @@ export async function GET(req: NextRequest) {
     orderBy: { endsAt: "asc" },
   });
 
-  return ok(markets.map((m) => ({
+  // Fetch cached profiles
+  const profiles = await Promise.all(markets.map(async (m) => {
+    if (!m.stock) return null;
+    try {
+      const cached = await redis.get(`profile:${m.stock.name}`);
+      if (cached) {
+        const p = JSON.parse(cached);
+        return { name: p.name, avatarUrl: p.avatarUrl, followers: p.followers, verified: p.verified, description: p.description };
+      }
+    } catch {}
+    return null;
+  }));
+
+  return ok(markets.map((m, i) => ({
     id: m.id,
     question: m.question,
     description: m.description,
     category: m.category,
+    categoryLabel: CATEGORY_LABEL[m.category] || m.category,
     stockName: m.stock?.name,
+    stockPrice: m.stock?.currentPrice.toString(),
+    profile: profiles[i],
     endsAt: m.endsAt,
     resolved: m.resolved,
     outcome: m.outcome,
