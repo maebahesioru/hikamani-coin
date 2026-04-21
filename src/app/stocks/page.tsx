@@ -47,6 +47,7 @@ function StocksContent() {
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [seeding, setSeeding] = useState(false);
+  const [priceFlash, setPriceFlash] = useState<Record<string, "up" | "down">>({});
 
   const fetchStocks = async (q = search, p = page) => {
     const res = await fetch(`/api/stocks?q=${encodeURIComponent(q)}&page=${p}`);
@@ -62,6 +63,25 @@ function StocksContent() {
     if (status === "unauthenticated") redirect("/login");
     fetchStocks();
     fetch("/api/bets").then((r) => r.json()).then(setMarkets);
+
+    // SSE for real-time price updates
+    const es = new EventSource("/api/stocks/stream");
+    es.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "update") {
+        setStocks((prev) => prev.map((s) => {
+          const updated = msg.stocks.find((u: { id: string; currentPrice: string }) => u.id === s.id);
+          if (updated) {
+            const dir = BigInt(updated.currentPrice) > BigInt(s.currentPrice) ? "up" : "down";
+            setPriceFlash((f) => ({ ...f, [s.id]: dir }));
+            setTimeout(() => setPriceFlash((f) => { const n = { ...f }; delete n[s.id]; return n; }), 1500);
+            return { ...s, currentPrice: updated.currentPrice };
+          }
+          return s;
+        }));
+      }
+    };
+    return () => es.close();
   }, [status]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -173,7 +193,9 @@ function StocksContent() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-[var(--accent)]">{Number(stock.currentPrice).toLocaleString()}</p>
+                  <p className={`text-2xl font-bold transition-colors duration-500 ${priceFlash[stock.id] === "up" ? "text-green-400" : priceFlash[stock.id] === "down" ? "text-red-400" : "text-[var(--accent)]"}`}>
+                    {Number(stock.currentPrice).toLocaleString()}
+                  </p>
                   <p className="text-xs text-[var(--text-dim)]">HKM / 株</p>
                 </div>
               </div>
