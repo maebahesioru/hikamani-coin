@@ -65,7 +65,17 @@ export async function POST(req: NextRequest) {
   if (!stock) return badRequest("銘柄が見つかりません");
 
   const totalCost = stock.currentPrice * BigInt(quantity);
-  const fee = BigInt(Math.ceil(Number(totalCost) * STOCK_FEE_RATE));
+
+  // Check fee discount
+  const feeDiscount = await prisma.purchase.findFirst({
+    where: {
+      userId: user.id,
+      item: { slug: "stock-fee-discount" },
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    },
+  });
+  const feeRate = feeDiscount ? STOCK_FEE_RATE_DISCOUNTED : STOCK_FEE_RATE;
+  const fee = BigInt(Math.ceil(Number(totalCost) * feeRate));
 
   // Check short sell unlock
   if ((action === "SHORT_SELL" || action === "SHORT_COVER") ) {
