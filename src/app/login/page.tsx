@@ -1,5 +1,6 @@
 "use client";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -27,6 +28,9 @@ export default function LoginPage() {
             X (Twitter)でログイン
           </button>
         </div>
+        <Link href="/" className="mt-4 inline-block text-sm text-[var(--text-dim)] hover:text-[var(--accent)]">
+          ← トップに戻る
+        </Link>
       </div>
     </main>
   );

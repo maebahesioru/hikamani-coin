@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -22,12 +22,12 @@ export function Navbar() {
               </button>
             </>
           ) : (
-            <button
-              onClick={() => signIn("discord")}
-              className="rounded bg-[#5865F2] px-4 py-1.5 text-white hover:bg-[#4752C4]"
+            <Link
+              href="/login"
+              className="rounded bg-[var(--accent)] px-4 py-1.5 font-semibold text-black hover:bg-[var(--accent-dim)]"
             >
-              Discordでログイン
-            </button>
+              ログイン
+            </Link>
           )}
         </div>
       </div>
