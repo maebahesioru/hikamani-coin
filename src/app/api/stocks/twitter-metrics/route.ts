@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getUserMomentum, getTwitterProfile } from "@/lib/twitter";
+import { getUserMomentum, fetchFxProfile } from "@/lib/twitter";
 import { ok } from "@/lib/api-utils";
 import { NextRequest } from "next/server";
 
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (screenName) {
     const [metrics, profile] = await Promise.all([
       getUserMomentum(screenName),
-      getTwitterProfile(screenName),
+      fetchFxProfile(screenName),
     ]);
     return ok({ metrics, profile });
   }
@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
     return ok({ stockId, name: stock.name, metrics });
   }
 
-  // All stocks
   const stocks = await prisma.stock.findMany();
   const results = await Promise.all(
     stocks.map(async (s) => {

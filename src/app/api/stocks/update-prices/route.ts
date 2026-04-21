@@ -1,30 +1,24 @@
 import { prisma } from "@/lib/prisma";
-import { getUserMomentum } from "@/lib/twitter";
+import { getUserMomentum, fetchFxProfile, diffProfiles, suggestBetMarkets, loadHandles } from "@/lib/twitter";
 import { ok } from "@/lib/api-utils";
 import { redis } from "@/lib/redis";
+import type { FxProfile } from "@/lib/twitter";
 
 export async function POST() {
+  const handles = await loadHandles();
   const stocks = await prisma.stock.findMany();
   const results = [];
+  const newMarkets = [];
 
+  // Update stock prices based on momentum
   for (const stock of stocks) {
     const metrics = await getUserMomentum(stock.name);
-
-    // Get previous momentum from Redis
     const prevKey = `stock:momentum:${stock.id}`;
     let prevMomentum = 0;
-    try {
-      const cached = await redis.get(prevKey);
-      if (cached) prevMomentum = parseFloat(cached);
-    } catch { /* redis unavailable */ }
+    try { const c = await redis.get(prevKey); if (c) prevMomentum = parseFloat(c); } catch {}
 
-    // Calculate price change based on momentum delta
-    const momentumDelta = prevMomentum > 0
-      ? (metrics.momentum - prevMomentum) / prevMomentum
-      : 0;
-
-    // Price changes: -10% to +15% based on momentum, with some randomness
-    const randomFactor = (Math.random() - 0.45) * 0.02; // slight upward bias
+    const momentumDelta = prevMomentum > 0 ? (metrics.momentum - prevMomentum) / prevMomentum : 0;
+    const randomFactor = (Math.random() - 0.45) * 0.02;
     const changeRate = Math.max(-0.10, Math.min(0.15, momentumDelta * 0.5 + randomFactor));
     const oldPrice = Number(stock.currentPrice);
     const newPrice = BigInt(Math.max(100, Math.round(oldPrice * (1 + changeRate))));
@@ -33,18 +27,108 @@ export async function POST() {
       prisma.stock.update({ where: { id: stock.id }, data: { currentPrice: newPrice } }),
       prisma.stockPrice.create({ data: { stockId: stock.id, price: newPrice } }),
     ]);
+    try { await redis.setex(prevKey, 3600, metrics.momentum.toString()); } catch {}
 
-    // Cache current momentum
-    try { await redis.setex(prevKey, 3600, metrics.momentum.toString()); } catch { /* ok */ }
-
-    results.push({
-      name: stock.name,
-      oldPrice: oldPrice.toString(),
-      newPrice: newPrice.toString(),
-      changeRate: `${(changeRate * 100).toFixed(2)}%`,
-      momentum: metrics.momentum,
-    });
+    results.push({ name: stock.name, oldPrice, newPrice: Number(newPrice), changeRate: `${(changeRate * 100).toFixed(2)}%`, momentum: metrics.momentum });
   }
 
-  return ok(results);
+  // Profile change detection + auto bet market generation
+  // Process in batches to avoid overwhelming FXTwitter
+  const batchSize = 10;
+  let deadCount = 0;
+  const totalAlive = handles.length;
+
+  for (let i = 0; i < handles.length; i += batchSize) {
+    const batch = handles.slice(i, i + batchSize);
+    const profiles = await Promise.all(batch.map((h) => fetchFxProfile(h)));
+
+    for (let j = 0; j < batch.length; j++) {
+      const handle = batch[j];
+      const curr = profiles[j];
+      if (!curr) continue;
+      if (!curr.alive) deadCount++;
+
+      // bot.py's 30% simultaneous death skip
+      if (deadCount / totalAlive >= 0.3) {
+        console.log(`⚠️ ${deadCount}件が同時消滅 - FXTwitterダウンの可能性、スキップ`);
+        return ok({ results, newMarkets, skipped: true });
+      }
+
+      const prevKey = `profile:${handle}`;
+      let prev: FxProfile | null = null;
+      try {
+        const cached = await redis.get(prevKey);
+        if (cached) prev = JSON.parse(cached);
+      } catch {}
+
+      if (prev) {
+        // bot.py's 2-strike dead detection
+        if (prev.alive && !curr.alive) {
+          const deadCountKey = `dead_pending:${handle}`;
+          let strikes = 0;
+          try { const c = await redis.get(deadCountKey); if (c) strikes = parseInt(c); } catch {}
+          if (strikes < 1) {
+            try { await redis.setex(deadCountKey, 1800, String(strikes + 1)); } catch {}
+            continue; // Skip, don't update state yet
+          }
+        }
+
+        const changes = diffProfiles(handle, prev, curr);
+        if (changes.length > 0) {
+          // Find or create stock for this user
+          let stock = await prisma.stock.findUnique({ where: { name: handle } });
+          if (!stock) {
+            stock = await prisma.stock.create({
+              data: { name: handle, description: `${curr.name} (@${handle})`, currentPrice: 1000n },
+            });
+          }
+
+          // Auto-generate bet markets from profile changes
+          const suggestions = suggestBetMarkets(handle, prev, curr);
+          for (const s of suggestions) {
+            const existing = await prisma.betMarket.findFirst({
+              where: { question: s.question, resolved: false },
+            });
+            if (!existing) {
+              const market = await prisma.betMarket.create({
+                data: {
+                  stockId: stock.id,
+                  question: s.question,
+                  category: s.category,
+                  endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week
+                },
+              });
+              newMarkets.push({ question: s.question, marketId: market.id });
+            }
+          }
+
+          // Boost/drop stock price based on change types
+          let priceImpact = 0;
+          for (const c of changes) {
+            if (c.type === "name_change") priceImpact += 5;
+            if (c.type === "icon_change") priceImpact += 3;
+            if (c.type === "suspension") priceImpact -= 50;
+            if (c.type === "revival") priceImpact += 30;
+            if (c.type === "verified") priceImpact += 20;
+            if (c.type === "lock") priceImpact -= 10;
+            if (c.type === "unlock") priceImpact += 5;
+          }
+          if (priceImpact !== 0) {
+            const rate = priceImpact / 100;
+            const newPrice = BigInt(Math.max(100, Math.round(Number(stock.currentPrice) * (1 + rate))));
+            await prisma.stock.update({ where: { id: stock.id }, data: { currentPrice: newPrice } });
+            await prisma.stockPrice.create({ data: { stockId: stock.id, price: newPrice } });
+          }
+        }
+      }
+
+      // Cache current profile
+      try { await redis.setex(prevKey, 86400, JSON.stringify(curr)); } catch {}
+    }
+
+    // Rate limit between batches
+    if (i + batchSize < handles.length) await new Promise((r) => setTimeout(r, 1000));
+  }
+
+  return ok({ results, newMarkets, profilesChecked: handles.length });
 }
