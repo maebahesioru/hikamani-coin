@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
       } else {
         results[handle] = false;
       }
-    } catch {
+    } catch (e) {
+      console.error(`[cache-profiles] ${handle}:`, e);
       results[handle] = false;
     }
     await new Promise((r) => setTimeout(r, 500)); // rate limit

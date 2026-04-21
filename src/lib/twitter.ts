@@ -1,4 +1,4 @@
-const YAHOO_API = "https://search.yahoo.co.jp/realtime/api/v1/pagination";
+﻿const YAHOO_API = "https://search.yahoo.co.jp/realtime/api/v1/pagination";
 const FXTWITTER_API = "https://api.fxtwitter.com";
 
 const UA_POOL = [
@@ -53,7 +53,7 @@ export async function fetchFxProfile(username: string): Promise<FxProfile | null
     try {
       const res = await fetch(`${FXTWITTER_API}/${username}`, {
         headers: { "User-Agent": randomUA() },
-        signal: AbortSignal.timeout(15000),
+        
       });
       if (res.status === 200) {
         const j = await res.json();
@@ -217,7 +217,7 @@ export async function getTweetMomentum(query: string, hours = 24): Promise<Tweet
   try {
     const res = await fetch(`${YAHOO_API}?${params}`, {
       headers: { ...YAHOO_HEADERS, "User-Agent": randomUA() },
-      signal: AbortSignal.timeout(15000),
+      
     });
     if (!res.ok) return emptyMetrics();
     const data = await res.json();
