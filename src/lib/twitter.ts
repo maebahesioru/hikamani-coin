@@ -207,7 +207,7 @@ export interface TweetMetrics {
   blueVerifiedCount: number;    // 認証済みユーザーのツイート数
   businessVerifiedCount: number;// 企業認証ユーザーのツイート数
   nightTweetCount: number;      // 深夜(0-5時)ツイート数
-  topTweets: { text: string; likes: number; rts: number; replies: number; quotes: number; mediaType: string[]; url: string }[];
+  topTweets: { text: string; likes: number; rts: number; replies: number; quotes: number; mediaType: string[]; url: string; userId: string; profileImage: string; screenName: string }[];
 }
 
 export async function getTweetMomentum(query: string, hours = 24): Promise<TweetMetrics> {
@@ -257,6 +257,9 @@ export async function getTweetMomentum(query: string, hours = 24): Promise<Tweet
         likes, rts, replies, quotes,
         mediaType: mt,
         url: (e.url as string) || "",
+        userId: (e.userId as string) || "",
+        profileImage: (e.profileImage as string) || "",
+        screenName: (e.screenName as string) || "",
       };
     });
 
@@ -303,7 +306,7 @@ function emptyMetrics(): TweetMetrics {
     tweetCount: 0, totalLikes: 0, totalRts: 0, totalReplies: 0, totalQuotes: 0, momentum: 0,
     sensitiveCount: 0, mediaCount: 0, videoCount: 0, gifCount: 0, hashtagCount: 0,
     mentionCount: 0, replyCount: 0, quoteCount: 0, blueVerifiedCount: 0,
-    businessVerifiedCount: 0, nightTweetCount: 0, topTweets: [],
+    businessVerifiedCount: 0, nightTweetCount: 0, topTweets: [] as TweetMetrics["topTweets"],
   };
 }
 

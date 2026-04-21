@@ -146,6 +146,10 @@ export async function POST() {
           if (curr.alive && prev.alive) {
             const followerDelta = (curr.followers - prev.followers) / Math.max(prev.followers, 1);
             priceImpact += Math.round(followerDelta * 30);
+            // following変化（急増=スパム疑い→下落、急減=整理→上昇）
+            const followingDelta = curr.following - prev.following;
+            if (followingDelta > 500) priceImpact -= 5; // 大量フォロー=スパム疑い
+            if (followingDelta < -100) priceImpact += 3; // フォロー整理=活動的
             const tweetDelta = (curr.tweets - prev.tweets) / Math.max(prev.tweets, 1);
             priceImpact += Math.round(tweetDelta * 10);
             const likesDelta = (curr.likes - prev.likes) / Math.max(prev.likes, 1);
