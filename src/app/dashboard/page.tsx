@@ -31,6 +31,13 @@ const PROVIDERS = [
 function ReferralForm({ onSuccess }: { onSuccess: () => void }) {
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setCode(ref);
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch("/api/bonus/referral", {
@@ -43,19 +50,24 @@ function ReferralForm({ onSuccess }: { onSuccess: () => void }) {
     if (res.ok) { setCode(""); onSuccess(); }
   };
   return (
-    <form onSubmit={submit} className="flex gap-3">
-      <input
-        placeholder="紹介コードを入力"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
-        required
-      />
-      <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">
-        適用
-      </button>
+    <div>
+      <p className="mb-3 text-xs text-[var(--text-dim)]">
+        招待してくれた人の紹介コードを入力すると双方にボーナスが付与されます（一度きり・登録後7日間限定）
+      </p>
+      <form onSubmit={submit} className="flex gap-3">
+        <input
+          placeholder="紹介コードを入力"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+          required
+        />
+        <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">
+          適用
+        </button>
+      </form>
       {msg && <p className="mt-2 text-sm">{msg}</p>}
-    </form>
+    </div>
   );
 }
 
@@ -143,7 +155,9 @@ function DashboardContent() {
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <p className="text-sm text-[var(--text-dim)]">紹介コード</p>
-          <p className="mt-1 break-all font-mono text-sm">{user.referralCode}</p>
+          <p className="mt-1 break-all font-mono text-sm select-all">{user.referralCode}</p>
+          <p className="mt-2 text-xs text-[var(--text-dim)]">紹介URL</p>
+          <p className="break-all font-mono text-xs select-all">{typeof window !== "undefined" ? `${window.location.origin}/dashboard?ref=${user.referralCode}` : ""}</p>
         </div>
       </div>
 
