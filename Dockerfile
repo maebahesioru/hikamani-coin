@@ -31,6 +31,10 @@ COPY <<'EOF' /app/start.sh
 npx prisma db push --accept-data-loss 2>&1 || echo "Migration skipped"
 npx tsx prisma/seed.ts 2>&1 || echo "Shop seed skipped"
 npx tsx prisma/seed-stocks.ts 2>&1 || echo "Stocks seed skipped"
+# Disable TwiGacha items (moved to TwiGacha site)
+npx prisma db execute --stdin <<'SQL' 2>/dev/null || true
+UPDATE "ShopItem" SET active = false WHERE slug IN ('twigacha-5pack', 'twigacha-ssr');
+SQL
 node server.js
 EOF
 RUN chmod +x /app/start.sh

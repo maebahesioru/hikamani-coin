@@ -12,8 +12,6 @@ const shopItems = [
   { slug: "ad-hide-30d", name: "各サイト広告30日非表示", description: "広告を30日間非表示", price: 1500n, category: "広告", recurring: true },
   { slug: "ad-hide-forever", name: "各サイト広告永久非表示", description: "広告を永久に非表示", price: 15000n, category: "広告" },
   // TwiGacha
-  { slug: "twigacha-5pack", name: "TwiGachaカードパック5枚", description: "カードパック5枚購入", price: 500n, category: "TwiGacha" },
-  { slug: "twigacha-ssr", name: "TwiGacha SSR確定1枚", description: "SSR確定カードパック", price: 700n, category: "TwiGacha" },
   // Discord
   { slug: "discord-booster", name: "Discordサーバーブースター権限", description: "優先スピーカー・低速モード回避", price: 3000n, category: "Discord" },
   { slug: "discord-namecolor", name: "Discord名前色変更", description: "名前の色を変更", price: 1000n, category: "Discord", recurring: true },
