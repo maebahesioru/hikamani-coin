@@ -230,7 +230,6 @@ function DashboardContent() {
       {/* Referral code input */}
       <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-4 text-lg font-bold">紹介コードを使う</h2>
-        <p className="mb-3 text-xs text-[var(--text-dim)]">招待してくれた人の紹介コードを入力すると双方にボーナスが付与されます（一度きり）</p>
         <ReferralForm onSuccess={fetchData} />
       </div>
 
