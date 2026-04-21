@@ -56,6 +56,18 @@ function StocksContent() {
       setStocks(data.stocks);
       setPages(data.pages);
       setTotal(data.total);
+      // Auto-cache profiles for displayed stocks
+      const uncached = data.stocks.filter((s: Stock) => !s.profile).map((s: Stock) => s.name);
+      if (uncached.length > 0) {
+        fetch("/api/stocks/cache-profiles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ handles: uncached }),
+        }).then(r => r.json()).then(() => {
+          // Refresh after caching
+          setTimeout(() => fetchStocks(q, p), 3000);
+        }).catch(() => {});
+      }
     }
   };
 
