@@ -18,6 +18,14 @@ export async function POST(req: NextRequest) {
   if (amount <= 0n) return badRequest("金額は1以上にしてください");
   if (recipientId === user.id) return badRequest("自分自身には送金できません");
 
+  // 紹介コードでも送金可能
+  let resolvedId = recipientId;
+  if (recipientId.length < 30) {
+    const byCode = await prisma.user.findUnique({ where: { referralCode: recipientId } });
+    if (byCode) resolvedId = byCode.id;
+  }
+  if (resolvedId === user.id) return badRequest("自分自身には送金できません");
+
   const fee = BigInt(Math.ceil(Number(amount) * TRANSFER_FEE_RATE));
   const total = amount + fee;
 
@@ -25,11 +33,11 @@ export async function POST(req: NextRequest) {
     const sender = await tx.wallet.findUnique({ where: { userId: user.id } });
     if (!sender || sender.balance < total) throw new Error("残高不足");
 
-    const recipient = await tx.wallet.findUnique({ where: { userId: recipientId } });
+    const recipient = await tx.wallet.findUnique({ where: { userId: resolvedId } });
     if (!recipient) throw new Error("送金先が見つかりません");
 
     await tx.wallet.update({ where: { userId: user.id }, data: { balance: { decrement: total } } });
-    await tx.wallet.update({ where: { userId: recipientId }, data: { balance: { increment: amount } } });
+    await tx.wallet.update({ where: { userId: resolvedId }, data: { balance: { increment: amount } } });
 
     // Fee to admin
     const adminId = process.env.ADMIN_USER_ID;
@@ -45,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     return tx.transaction.create({
-      data: { type: "TRANSFER", amount, fee, senderId: user.id, receiverId: recipientId, memo },
+      data: { type: "TRANSFER", amount, fee, senderId: user.id, receiverId: resolvedId, memo },
     });
   });
 

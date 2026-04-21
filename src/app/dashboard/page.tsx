@@ -24,9 +24,40 @@ interface Transaction {
 
 const PROVIDERS = [
   { id: "discord", name: "Discord", bonus: 300, color: "bg-[#5865F2]" },
-  { id: "google", name: "Google", bonus: 200, color: "bg-white text-gray-800 border border-gray-300" },
+  { id: "google", name: "Google", bonus: 200, color: "bg-white !text-gray-800 border border-gray-300" },
   { id: "twitter", name: "X (Twitter)", bonus: 200, color: "bg-black" },
 ];
+
+function ReferralForm({ onSuccess }: { onSuccess: () => void }) {
+  const [code, setCode] = useState("");
+  const [msg, setMsg] = useState("");
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch("/api/bonus/referral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    setMsg(data.message || data.error || "エラー");
+    if (res.ok) { setCode(""); onSuccess(); }
+  };
+  return (
+    <form onSubmit={submit} className="flex gap-3">
+      <input
+        placeholder="紹介コードを入力"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+        required
+      />
+      <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">
+        適用
+      </button>
+      {msg && <p className="mt-2 text-sm">{msg}</p>}
+    </form>
+  );
+}
 
 function DashboardContent() {
   const { data: session, status } = useSession();
@@ -40,15 +71,10 @@ function DashboardContent() {
 
   const fetchData = useCallback(async () => {
     const [meRes, walletRes] = await Promise.all([fetch("/api/me"), fetch("/api/wallet")]);
-    if (meRes.ok) {
-      const meData = await meRes.json();
-      setUser(meData);
-      setDailyClaimed(meData.dailyClaimed);
-    } else {
-      // Session invalid - redirect to login
-      window.location.href = "/login";
-      return;
-    }
+    if (!meRes.ok) return;
+    const meData = await meRes.json();
+    setUser(meData);
+    setDailyClaimed(meData.dailyClaimed);
     if (walletRes.ok) {
       const w = await walletRes.json();
       setTxs(w.transactions);
@@ -60,16 +86,7 @@ function DashboardContent() {
       window.location.href = "/login";
       return;
     }
-    if (status === "authenticated") {
-      // Verify session is actually valid
-      fetch("/api/auth/session").then(r => r.json()).then(s => {
-        if (!s?.user) {
-          window.location.href = "/login";
-        } else {
-          fetchData();
-        }
-      });
-    }
+    if (status === "authenticated") fetchData();
   }, [status, fetchData]);
 
   const claimDaily = async () => {
@@ -151,7 +168,8 @@ function DashboardContent() {
                 <button
                   key={p.id}
                   onClick={() => signIn(p.id, { callbackUrl: "/dashboard" })}
-                  className={`rounded px-4 py-2 text-sm font-semibold ${p.color} text-white hover:opacity-90`}
+                  className={`rounded px-4 py-2 text-sm font-semibold ${p.color} hover:opacity-90`}
+                  style={p.id === "google" ? { color: "#1f2937" } : { color: "white" }}
                 >
                   {p.name} 連携で +{p.bonus} HKM
                 </button>
@@ -164,9 +182,10 @@ function DashboardContent() {
       {/* Transfer form */}
       <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-4 text-lg font-bold">送金（贈与）</h2>
+        <p className="mb-3 text-xs text-[var(--text-dim)]">送金先はユーザーIDまたは紹介コードで指定できます</p>
         <form onSubmit={transfer} className="grid gap-3 sm:grid-cols-4">
           <input
-            placeholder="送金先ユーザーID"
+            placeholder="ユーザーID または 紹介コード"
             value={recipientId}
             onChange={(e) => setRecipientId(e.target.value)}
             className="rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
@@ -191,6 +210,13 @@ function DashboardContent() {
           </button>
         </form>
         {transferMsg && <p className="mt-2 text-sm">{transferMsg}</p>}
+      </div>
+
+      {/* Referral code input */}
+      <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-4 text-lg font-bold">紹介コードを使う</h2>
+        <p className="mb-3 text-xs text-[var(--text-dim)]">招待してくれた人の紹介コードを入力すると双方にボーナスが付与されます（一度きり）</p>
+        <ReferralForm onSuccess={fetchData} />
       </div>
 
       {/* Transaction history */}
