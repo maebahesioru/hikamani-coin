@@ -185,6 +185,18 @@ export default function ApiDocsPage() {
 
         {/* Rate limit */}
         <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+          <h2 className="mb-3 text-xl font-bold">広告システム</h2>
+          <p className="mb-3 text-sm text-[var(--text-dim)]">各サイトに1行貼るだけでHKM広告を表示できます。</p>
+          <pre className="rounded bg-[var(--bg)] p-3 text-xs overflow-x-auto mb-3">{`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" async></script>`}</pre>
+          <ul className="text-sm text-[var(--text-dim)] space-y-1 list-disc pl-4">
+            <li>HKM広告主の広告を優先表示</li>
+            <li>広告非表示購入者には表示しない</li>
+            <li>HKM広告がない場合は何も表示しない（AdSenseと競合しない）</li>
+            <li>広告管理: <a href="/ads" className="text-[var(--accent)] hover:underline">/ads</a></li>
+          </ul>
+        </section>
+
+        <section className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <h2 className="mb-3 text-xl font-bold">レート制限</h2>
           <p className="text-sm text-[var(--text-dim)]">現在レート制限は設けていませんが、過度なリクエストはブロックされる場合があります。</p>
         </section>

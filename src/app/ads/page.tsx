@@ -1,0 +1,144 @@
+"use client";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { SessionProvider } from "@/components/session-provider";
+import { Navbar } from "@/components/navbar";
+import { showToast } from "@/components/toaster";
+import { redirect } from "next/navigation";
+
+interface Ad {
+  id: string;
+  type: string;
+  content: string;
+  imageUrl: string | null;
+  linkUrl: string | null;
+  expiresAt: string;
+  active: boolean;
+}
+
+function AdsContent() {
+  const { status } = useSession();
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [type, setType] = useState<"ALL_SITES" | "SINGLE_SITE">("ALL_SITES");
+  const [content, setContent] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (status === "unauthenticated") redirect("/login");
+    fetch("/api/ads").then(r => r.json()).then(setAds);
+  }, [status]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const res = await fetch("/api/ads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, content, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast("広告を掲載しました！");
+      setContent(""); setImageUrl(""); setLinkUrl("");
+      fetch("/api/ads").then(r => r.json()).then(setAds);
+    } else {
+      showToast(data.error || "エラーが発生しました", "error");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="mb-2 text-2xl font-bold">広告管理</h1>
+      <p className="mb-6 text-sm text-[var(--text-dim)]">
+        HKMで広告を掲載できます。広告は<code className="rounded bg-[var(--border)] px-1">ad.js</code>を導入した全サイトに表示されます。
+      </p>
+
+      {/* 新規広告 */}
+      <div className="mb-8 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-4 text-lg font-bold">広告を掲載する</h2>
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-semibold">種別</label>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" value="ALL_SITES" checked={type === "ALL_SITES"} onChange={() => setType("ALL_SITES")} />
+                <span className="text-sm">全サイト表示 (2,000 HKM/24h)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" value="SINGLE_SITE" checked={type === "SINGLE_SITE"} onChange={() => setType("SINGLE_SITE")} />
+                <span className="text-sm">1サイト表示 (500 HKM/24h)</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold">広告テキスト *</label>
+            <textarea value={content} onChange={e => setContent(e.target.value)} required
+              placeholder="広告の本文を入力してください"
+              className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm h-20 resize-none" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold">画像URL（任意）</label>
+            <input value={imageUrl} onChange={e => setImageUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold">リンクURL（任意）</label>
+            <input value={linkUrl} onChange={e => setLinkUrl(e.target.value)}
+              placeholder="https://..."
+              className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+          </div>
+          <button type="submit" disabled={loading || !content}
+            className="rounded bg-[var(--accent)] px-6 py-2 text-sm font-semibold text-black disabled:opacity-50">
+            {loading ? "処理中..." : `掲載する (${type === "ALL_SITES" ? "2,000" : "500"} HKM)`}
+          </button>
+        </form>
+      </div>
+
+      {/* 掲載中の広告 */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-4 text-lg font-bold">掲載中の広告</h2>
+        {ads.length === 0 ? (
+          <p className="text-[var(--text-dim)] text-sm">掲載中の広告はありません</p>
+        ) : (
+          <div className="space-y-3">
+            {ads.map(ad => (
+              <div key={ad.id} className="rounded border border-[var(--border)] p-3 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`rounded px-2 py-0.5 text-xs ${ad.type === "ALL_SITES" ? "bg-blue-700" : "bg-green-700"} text-white`}>
+                    {ad.type === "ALL_SITES" ? "全サイト" : "1サイト"}
+                  </span>
+                  <span className="text-[var(--text-dim)] text-xs">{new Date(ad.expiresAt).toLocaleString("ja-JP")} まで</span>
+                </div>
+                <p>{ad.content}</p>
+                {ad.linkUrl && <a href={ad.linkUrl} className="text-xs text-[var(--accent)]">{ad.linkUrl}</a>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 広告非表示について */}
+      <div className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-3 text-lg font-bold">広告を非表示にする</h2>
+        <p className="text-sm text-[var(--text-dim)] mb-3">
+          ショップで「各サイト広告30日非表示(1,500 HKM)」または「永久非表示(15,000 HKM)」を購入すると、
+          HKM広告が表示されなくなります。
+        </p>
+        <a href="/shop" className="text-sm text-[var(--accent)] hover:underline">ショップで購入する →</a>
+      </div>
+    </div>
+  );
+}
+
+export default function AdsPage() {
+  return (
+    <SessionProvider>
+      <Navbar />
+      <AdsContent />
+    </SessionProvider>
+  );
+}
