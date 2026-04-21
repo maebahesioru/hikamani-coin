@@ -16,14 +16,7 @@ const shopItems = [
   { slug: "discord-booster", name: "Discordサーバーブースター権限", description: "優先スピーカー・低速モード回避", price: 3000n, category: "Discord" },
   { slug: "discord-namecolor", name: "Discord名前色変更", description: "名前の色を変更", price: 1000n, category: "Discord", recurring: true },
   { slug: "discord-vip", name: "Discord VIPチャンネル", description: "VIP限定雑談チャンネル解放", price: 5000n, category: "Discord", recurring: true },
-  // Proプラン
-  { slug: "mani-translate-pro", name: "Mani!?翻訳Pro", description: "翻訳Proプラン", price: 800n, category: "Proプラン", recurring: true },
-  { slug: "saens-kinmaker", name: "SAENSキンメーカー動画出力", description: "動画出力1回", price: 300n, category: "Proプラン" },
-  { slug: "illust-sagashitter-pro", name: "イラストさがしったーPro", description: "Proプラン", price: 500n, category: "Proプラン", recurring: true },
-  { slug: "narikitter-pro", name: "なりきったーPro", description: "Proプラン", price: 1000n, category: "Proプラン", recurring: true },
-  { slug: "hikafuwa-box-pro", name: "ヒカフワBOX Pro", description: "Proプラン", price: 600n, category: "Proプラン", recurring: true },
-  { slug: "hikamani-ai-pro", name: "ヒカマーなりきり・バトル・検索AI Pro", description: "Proプラン", price: 1500n, category: "Proプラン", recurring: true },
-  { slug: "takuya-voice-pro", name: "拓也さんボイスPro", description: "Proプラン", price: 1200n, category: "Proプラン", recurring: true },
+  // Proプラン（各サイトで直接購入）
   // スポンサー
   { slug: "sponsor-30d", name: "ポータルスポンサー30日", description: "アイコン付き30日掲載", price: 3000n, category: "スポンサー" },
   { slug: "sponsor-forever", name: "ポータルスポンサー永久", description: "アイコン付き永久掲載", price: 50000n, category: "スポンサー" },
