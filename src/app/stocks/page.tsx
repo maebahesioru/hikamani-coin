@@ -11,6 +11,7 @@ interface Stock {
   description: string | null;
   currentPrice: string;
   priceHistory: { price: string; createdAt: string }[];
+  profile: { name: string; description: string; avatarUrl: string | null; followers: number; verified: boolean } | null;
 }
 
 interface BetMarket {
@@ -153,9 +154,20 @@ function StocksContent() {
           {stocks.map((stock) => (
             <div key={stock.id} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
               <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold">{stock.name}</h3>
-                  {stock.description && <p className="text-xs text-[var(--text-dim)]">{stock.description}</p>}
+                <div className="flex items-center gap-3">
+                  {stock.profile?.avatarUrl && (
+                    <img src={stock.profile.avatarUrl} alt="" className="h-10 w-10 rounded-full" />
+                  )}
+                  <div>
+                    <h3 className="font-bold">
+                      {stock.profile?.name || stock.name}
+                      {stock.profile?.verified && <span className="ml-1 text-[#1DA1F2] text-xs">✓</span>}
+                    </h3>
+                    <p className="text-xs text-[var(--text-dim)]">@{stock.name}{stock.profile?.followers != null ? ` · ${stock.profile.followers.toLocaleString()}フォロワー` : ""}</p>
+                    {stock.profile?.description && (
+                      <p className="mt-1 text-xs text-[var(--text-dim)] line-clamp-2 max-w-xs">{stock.profile.description}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-[var(--accent)]">{Number(stock.currentPrice).toLocaleString()}</p>

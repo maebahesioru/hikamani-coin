@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, badRequest, ok } from "@/lib/api-utils";
 import { STOCK_FEE_RATE } from "@/lib/constants";
+import { fetchFxProfile } from "@/lib/twitter";
+import { redis } from "@/lib/redis";
 import { NextRequest } from "next/server";
 
 // GET: 株一覧（検索・ページネーション対応）
@@ -21,11 +23,24 @@ export async function GET(req: NextRequest) {
     prisma.stock.count({ where }),
   ]);
 
+  // Fetch cached profiles from Redis
+  const profiles = await Promise.all(stocks.map(async (s) => {
+    try {
+      const cached = await redis.get(`profile:${s.name}`);
+      if (cached) {
+        const p = JSON.parse(cached);
+        return { name: p.name, description: p.description, avatarUrl: p.avatarUrl, followers: p.followers, verified: p.verified };
+      }
+    } catch {}
+    return null;
+  }));
+
   return ok({
-    stocks: stocks.map((s) => ({
+    stocks: stocks.map((s, i) => ({
       ...s,
       currentPrice: s.currentPrice.toString(),
       priceHistory: s.priceHistory.map((p) => ({ price: p.price.toString(), createdAt: p.createdAt })),
+      profile: profiles[i],
     })),
     total,
     page,
