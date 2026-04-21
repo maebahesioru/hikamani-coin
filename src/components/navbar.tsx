@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -24,6 +25,7 @@ export function Navbar() {
           HKM
         </Link>
         <div className="flex items-center gap-4 text-sm">
+          <ThemeToggle />
           {validSession && session ? (
             <>
               <Link href="/dashboard" className="hover:text-[var(--accent)]">ダッシュボード</Link>

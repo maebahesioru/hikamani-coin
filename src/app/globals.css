@@ -10,6 +10,38 @@
   --text-dim: #94a3b8;
 }
 
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --accent: #d97706;
+    --accent-dim: #b45309;
+    --text: #0f172a;
+    --text-dim: #64748b;
+  }
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --accent: #d97706;
+  --accent-dim: #b45309;
+  --text: #0f172a;
+  --text-dim: #64748b;
+}
+
+[data-theme="dark"] {
+  --bg: #0a0a0f;
+  --card: #12121a;
+  --border: #1e1e2e;
+  --accent: #f59e0b;
+  --accent-dim: #b45309;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
