@@ -1,4 +1,4 @@
-import { SessionProvider } from "@/components/session-provider";
+﻿import { SessionProvider } from "@/components/session-provider";
 import { Navbar } from "@/components/navbar";
 
 const BASE = "https://hikakinmaniacoin.hikamer.f5.si";
@@ -133,7 +133,7 @@ export default function ApiDocsPage() {
             <h2 className="mb-4 text-xl font-bold">{section.section}</h2>
             <div className="space-y-4">
               {section.items.map((ep) => (
-                <div key={ep.path} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
+                <div key={`${ep.method}-${ep.path}`} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <span className={`rounded px-2 py-0.5 text-xs font-bold ${ep.method === "GET" ? "bg-green-700 text-white" : "bg-blue-700 text-white"}`}>{ep.method}</span>
                     <code className="font-mono text-sm text-[var(--accent)]">{BASE}{ep.path}</code>
