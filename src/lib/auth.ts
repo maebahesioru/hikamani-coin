@@ -10,7 +10,7 @@ async function getOrCreateUser(provider: string, providerId: string, profile: {
   avatar?: string;
   email?: string;
 }) {
-  const accountProvider = provider.toUpperCase() as "DISCORD" | "TWITTER";
+  const accountProvider = provider.toUpperCase() as "DISCORD" | "TWITTER" | "GOOGLE";
 
   // Check if linked account exists
   const linked = await prisma.linkedAccount.findUnique({
@@ -86,7 +86,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, account, profile }) {
       if (account && profile) {
         const providerId = (profile.id || profile.sub) as string;
-        const provider = account.provider.toUpperCase() as "DISCORD" | "TWITTER";
+        const provider = account.provider.toUpperCase() as "DISCORD" | "TWITTER" | "GOOGLE";
         const linked = await prisma.linkedAccount.findUnique({
           where: { provider_providerId: { provider, providerId } },
         });

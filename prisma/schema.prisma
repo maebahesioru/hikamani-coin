@@ -111,6 +111,7 @@ model LinkedAccount {
 enum AccountProvider {
   DISCORD
   TWITTER
+  GOOGLE
 }
 
 model BonusClaim {
