@@ -72,16 +72,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async signIn({ account, profile }) {
       if (!account || !profile) return false;
-      const provider = account.provider;
-      const providerId = (profile.id || profile.sub) as string;
+      try {
+        const provider = account.provider;
+        const providerId = (profile.id || profile.sub) as string;
 
-      await getOrCreateUser(provider, providerId, {
-        username: (profile.username || profile.email || profile.name) as string,
-        displayName: (profile.global_name || profile.name) as string,
-        avatar: (profile.image_url || profile.picture) as string | undefined,
-        email: profile.email as string | undefined,
-      });
-      return true;
+        await getOrCreateUser(provider, providerId, {
+          username: (profile.username || profile.email || profile.name) as string,
+          displayName: (profile.global_name || profile.name) as string,
+          avatar: (profile.image_url || profile.picture) as string | undefined,
+          email: profile.email as string | undefined,
+        });
+        return true;
+      } catch (e) {
+        console.error("[AUTH] signIn error:", e);
+        return false;
+      }
     },
     async jwt({ token, account, profile }) {
       if (account && profile) {
