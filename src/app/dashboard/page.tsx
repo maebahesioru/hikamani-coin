@@ -140,7 +140,15 @@ function DashboardContent() {
           <p className="text-sm text-[var(--text-dim)]">残高</p>
           <p className="text-3xl font-bold text-[var(--accent)]">{Number(user.balance).toLocaleString()} <span className="text-base">HKM</span></p>
           <p className="mt-2 text-xs text-[var(--text-dim)]">ユーザーID</p>
-          <p className="break-all font-mono text-xs select-all">{session?.user?.id}</p>
+          <div className="flex items-center gap-2">
+            <p className="break-all font-mono text-xs select-all flex-1">{session?.user?.id}</p>
+            <button
+              onClick={() => navigator.clipboard.writeText(session?.user?.id || "")}
+              className="shrink-0 rounded bg-[var(--border)] px-2 py-1 text-xs hover:bg-[var(--accent)] hover:text-black"
+            >
+              コピー
+            </button>
+          </div>
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <p className="text-sm text-[var(--text-dim)]">連続ログイン</p>
@@ -155,9 +163,23 @@ function DashboardContent() {
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <p className="text-sm text-[var(--text-dim)]">紹介コード</p>
-          <p className="mt-1 break-all font-mono text-sm select-all">{user.referralCode}</p>
-          <p className="mt-2 text-xs text-[var(--text-dim)]">紹介URL</p>
-          <p className="break-all font-mono text-xs select-all">{typeof window !== "undefined" ? `${window.location.origin}/dashboard?ref=${user.referralCode}` : ""}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <p className="break-all font-mono text-sm select-all flex-1">{user.referralCode}</p>
+            <button
+              onClick={() => { const url = `${window.location.origin}/dashboard?ref=${user.referralCode}`; navigator.clipboard.writeText(url); }}
+              className="shrink-0 rounded bg-[var(--border)] px-2 py-1 text-xs hover:bg-[var(--accent)] hover:text-black"
+            >
+              URLコピー
+            </button>
+            <a
+              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`ヒカマニコイン(HKM)に登録しよう！登録ボーナス500HKMもらえるよ🪙\n`)}&url=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/dashboard?ref=${user.referralCode}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded bg-black px-2 py-1 text-xs text-white hover:bg-gray-800"
+            >
+              Xでシェア
+            </a>
+          </div>
         </div>
       </div>
 
