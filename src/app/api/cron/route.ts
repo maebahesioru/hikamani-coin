@@ -38,7 +38,44 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 2. 期限切れ賭けマーケットを自動解決（引き分け扱い＝全額返金）
+  // 3. 周年ボーナス（誕生日チェック）
+  if (type === "all") {
+    try {
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const day = today.getDate();
+      const users = await prisma.user.findMany({
+        where: {
+          birthday: { not: null },
+          createdAt: { lt: new Date(today.getFullYear() - 1, today.getMonth(), today.getDate()) },
+        },
+        include: { wallet: true },
+      });
+      let anniversaryCount = 0;
+      for (const u of users) {
+        if (!u.birthday) continue;
+        const bday = new Date(u.birthday);
+        if (bday.getMonth() + 1 !== month || bday.getDate() !== day) continue;
+        // Check if already claimed this year
+        const yearStart = new Date(today.getFullYear(), 0, 1);
+        const existing = await prisma.bonusClaim.findFirst({
+          where: { userId: u.id, type: "ANNIVERSARY", createdAt: { gte: yearStart } },
+        });
+        if (existing) continue;
+        await prisma.$transaction(async (tx) => {
+          await tx.wallet.update({ where: { userId: u.id }, data: { balance: { increment: 1000n } } });
+          await tx.transaction.create({ data: { type: "BONUS", amount: 1000n, receiverId: u.id, memo: "周年ボーナス" } });
+          await tx.bonusClaim.create({ data: { userId: u.id, type: "ANNIVERSARY", amount: 1000n } });
+        });
+        anniversaryCount++;
+      }
+      results.anniversaryBonus = anniversaryCount;
+    } catch (e) {
+      results.anniversaryError = String(e);
+    }
+  }
+
+  // 4. 期限切れ賭けマーケットを自動解決（引き分け扱い＝全額返金）
   try {
     const expired = await prisma.betMarket.findMany({
       where: { resolved: false, endsAt: { lt: new Date() } },
