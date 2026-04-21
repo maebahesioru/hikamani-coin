@@ -18,13 +18,7 @@ export async function POST(req: NextRequest) {
   if (amount <= 0n) return badRequest("金額は1以上にしてください");
   if (recipientId === user.id) return badRequest("自分自身には送金できません");
 
-  // 紹介コードでも送金可能
-  let resolvedId = recipientId;
-  if (recipientId.length < 30) {
-    const byCode = await prisma.user.findUnique({ where: { referralCode: recipientId } });
-    if (byCode) resolvedId = byCode.id;
-  }
-  if (resolvedId === user.id) return badRequest("自分自身には送金できません");
+  const resolvedId = recipientId;
 
   const fee = BigInt(Math.ceil(Number(amount) * TRANSFER_FEE_RATE));
   const total = amount + fee;

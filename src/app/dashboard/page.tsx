@@ -127,6 +127,8 @@ function DashboardContent() {
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <p className="text-sm text-[var(--text-dim)]">残高</p>
           <p className="text-3xl font-bold text-[var(--accent)]">{Number(user.balance).toLocaleString()} <span className="text-base">HKM</span></p>
+          <p className="mt-2 text-xs text-[var(--text-dim)]">ユーザーID</p>
+          <p className="break-all font-mono text-xs select-all">{session?.user?.id}</p>
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <p className="text-sm text-[var(--text-dim)]">連続ログイン</p>
@@ -182,10 +184,9 @@ function DashboardContent() {
       {/* Transfer form */}
       <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-4 text-lg font-bold">送金（贈与）</h2>
-        <p className="mb-3 text-xs text-[var(--text-dim)]">送金先はユーザーIDまたは紹介コードで指定できます</p>
         <form onSubmit={transfer} className="grid gap-3 sm:grid-cols-4">
           <input
-            placeholder="ユーザーID または 紹介コード"
+            placeholder="送金先ユーザーID"
             value={recipientId}
             onChange={(e) => setRecipientId(e.target.value)}
             className="rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"

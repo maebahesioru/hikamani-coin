@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
   const me = await prisma.user.findUnique({ where: { id: user.id } });
   if (me?.referredById) return badRequest("既に紹介コードを使用済みです");
 
+  // 登録後7日間限定
+  const daysSinceRegistration = me ? (Date.now() - new Date(me.createdAt).getTime()) / 86400000 : 0;
+  if (daysSinceRegistration > 7) return badRequest("紹介コードは登録後7日間のみ使用できます");
+
   const inviter = await prisma.user.findUnique({ where: { referralCode: code } });
   if (!inviter) return badRequest("無効な紹介コードです");
   if (inviter.id === user.id) return badRequest("自分の紹介コードは使えません");
