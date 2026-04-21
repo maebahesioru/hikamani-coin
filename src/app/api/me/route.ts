@@ -17,6 +17,12 @@ export async function GET() {
 
   if (!user) return unauthorized();
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayLogin = await prisma.dailyLogin.findUnique({
+    where: { userId_date: { userId: user.id, date: today } },
+  });
+
   return ok({
     id: user.id,
     username: user.username,
@@ -25,6 +31,7 @@ export async function GET() {
     referralCode: user.referralCode,
     balance: user.wallet?.balance.toString() ?? "0",
     streak: user.dailyLogins[0]?.streak ?? 0,
+    dailyClaimed: !!todayLogin,
     linkedAccounts: user.linkedAccounts.map((a) => a.provider),
     stockPositions: user.stockPositions.map((p) => ({
       stockName: p.stock.name,

@@ -11,6 +11,7 @@ interface UserData {
   referralCode: string;
   displayName: string;
   linkedAccounts: string[];
+  dailyClaimed: boolean;
 }
 
 interface Transaction {
@@ -39,7 +40,11 @@ function DashboardContent() {
 
   const fetchData = useCallback(async () => {
     const [meRes, walletRes] = await Promise.all([fetch("/api/me"), fetch("/api/wallet")]);
-    if (meRes.ok) setUser(await meRes.json());
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      setUser(meData);
+      setDailyClaimed(meData.dailyClaimed);
+    }
     if (walletRes.ok) {
       const w = await walletRes.json();
       setTxs(w.transactions);
