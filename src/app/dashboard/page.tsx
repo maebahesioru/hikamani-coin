@@ -115,22 +115,34 @@ function DashboardContent() {
       {/* Account linking */}
       <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-4 text-lg font-bold">アカウント連携</h2>
-        <p className="mb-3 text-xs text-[var(--text-dim)]">連携するとボーナスHKMがもらえます（一度きり）</p>
-        <div className="flex flex-wrap gap-3">
-          {PROVIDERS.map((p) => {
-            const linked = user.linkedAccounts.includes(p.id.toUpperCase());
-            return (
-              <button
-                key={p.id}
-                onClick={() => !linked && signIn(p.id, { callbackUrl: "/dashboard" })}
-                disabled={linked}
-                className={`rounded px-4 py-2 text-sm font-semibold ${linked ? "opacity-50 cursor-default bg-[var(--border)] text-[var(--text-dim)]" : `${p.color} text-white hover:opacity-90`}`}
-              >
-                {linked ? `✓ ${p.name} 連携済み` : `${p.name} 連携 (+${p.bonus} HKM)`}
-              </button>
-            );
-          })}
-        </div>
+        {PROVIDERS.filter((p) => user.linkedAccounts.includes(p.id.toUpperCase())).length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-xs text-[var(--text-dim)]">連携済み</p>
+            <div className="flex flex-wrap gap-2">
+              {PROVIDERS.filter((p) => user.linkedAccounts.includes(p.id.toUpperCase())).map((p) => (
+                <span key={p.id} className="rounded bg-[var(--border)] px-3 py-1.5 text-sm text-[var(--text-dim)]">
+                  ✓ {p.name} (+{p.bonus} HKM 獲得済み)
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {PROVIDERS.filter((p) => !user.linkedAccounts.includes(p.id.toUpperCase())).length > 0 && (
+          <div>
+            <p className="mb-2 text-xs text-[var(--text-dim)]">未連携（連携してボーナスをもらおう！）</p>
+            <div className="flex flex-wrap gap-2">
+              {PROVIDERS.filter((p) => !user.linkedAccounts.includes(p.id.toUpperCase())).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => signIn(p.id, { callbackUrl: "/dashboard" })}
+                  className={`rounded px-4 py-2 text-sm font-semibold ${p.color} text-white hover:opacity-90`}
+                >
+                  {p.name} 連携で +{p.bonus} HKM
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Transfer form */}
