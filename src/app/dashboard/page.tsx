@@ -44,6 +44,10 @@ function DashboardContent() {
       const meData = await meRes.json();
       setUser(meData);
       setDailyClaimed(meData.dailyClaimed);
+    } else {
+      // Session invalid - redirect to login
+      window.location.href = "/login";
+      return;
     }
     if (walletRes.ok) {
       const w = await walletRes.json();
@@ -52,8 +56,20 @@ function DashboardContent() {
   }, []);
 
   useEffect(() => {
-    if (status === "unauthenticated") redirect("/login");
-    if (status === "authenticated") fetchData();
+    if (status === "unauthenticated") {
+      window.location.href = "/login";
+      return;
+    }
+    if (status === "authenticated") {
+      // Verify session is actually valid
+      fetch("/api/auth/session").then(r => r.json()).then(s => {
+        if (!s?.user) {
+          window.location.href = "/login";
+        } else {
+          fetchData();
+        }
+      });
+    }
   }, [status, fetchData]);
 
   const claimDaily = async () => {
