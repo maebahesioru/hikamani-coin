@@ -28,7 +28,7 @@ EXPOSE 3000
 ENV PORT=3000
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
-npx prisma db push --skip-generate --accept-data-loss 2>&1 || echo "Migration skipped"
+npx prisma db push --accept-data-loss 2>&1 || echo "Migration skipped"
 node server.js
 EOF
 RUN chmod +x /app/start.sh
