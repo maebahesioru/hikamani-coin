@@ -44,5 +44,25 @@ export async function POST(req: NextRequest) {
     });
   });
 
-  return ok({ purchaseId: result.id });
+  // TwiGacha連携: ガチャアイテムの場合はTwiGachaのAPIを叩く
+  let twigachaCards = null;
+  if (itemSlug === "twigacha-5pack" || itemSlug === "twigacha-ssr") {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: { linkedAccounts: { where: { provider: "DISCORD" } } },
+    });
+    const discordId = dbUser?.linkedAccounts[0]?.providerId;
+    if (discordId && process.env.TWIGACHA_URL) {
+      try {
+        const res = await fetch(`${process.env.TWIGACHA_URL}/api/gacha/hkm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ discordId, type: itemSlug === "twigacha-ssr" ? "ssr" : "normal" }),
+        });
+        if (res.ok) twigachaCards = await res.json();
+      } catch { /* TwiGacha unavailable */ }
+    }
+  }
+
+  return ok({ purchaseId: result.id, twigachaCards });
 }
