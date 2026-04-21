@@ -198,7 +198,29 @@ export default function ApiDocsPage() {
 
         <section className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <h2 className="mb-3 text-xl font-bold">レート制限</h2>
-          <p className="text-sm text-[var(--text-dim)]">現在レート制限は設けていませんが、過度なリクエストはブロックされる場合があります。</p>
+          <div className="text-sm text-[var(--text-dim)] space-y-2">
+            <p>全APIエンドポイントにIPアドレスまたはAPIキー単位でレート制限が設けられています。</p>
+            <table className="w-full text-xs mt-2">
+              <thead><tr className="border-b border-[var(--border)]"><th className="text-left py-1">エンドポイント</th><th className="text-left py-1">制限</th></tr></thead>
+              <tbody>
+                {[
+                  ["/api/external (GET)", "60回/分"],
+                  ["/api/external (POST)", "30回/分"],
+                  ["/api/wallet/transfer", "10回/分"],
+                  ["/api/checkout", "10回/分"],
+                  ["/api/stocks", "30回/分"],
+                  ["/api/bets", "30回/分"],
+                  ["その他", "100回/分"],
+                ].map(([ep, limit]) => (
+                  <tr key={ep} className="border-b border-[var(--border)]">
+                    <td className="py-1 font-mono">{ep}</td>
+                    <td className="py-1">{limit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-2">制限超過時は <code className="rounded bg-[var(--border)] px-1">429 Too Many Requests</code> が返されます。<code className="rounded bg-[var(--border)] px-1">Retry-After</code> ヘッダーで待機時間を確認してください。</p>
+          </div>
         </section>
       </main>
     </SessionProvider>

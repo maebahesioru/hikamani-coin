@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 async function validateApiKey(req: NextRequest) {
   const key = req.headers.get("x-api-key");
@@ -43,6 +44,8 @@ export async function OPTIONS(req: NextRequest) {
 
 // GET: ユーザーの残高を外部から取得
 export async function GET(req: NextRequest) {
+  const rl = await rateLimit(req, { limit: 60, window: 60 });
+  if (!rl.ok) return rateLimitResponse(rl.remaining, rl.reset);
   const apiKey = await validateApiKey(req);
   if (!apiKey) return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
 
@@ -66,6 +69,8 @@ export async function GET(req: NextRequest) {
 
 // POST: 外部からのポイント付与/消費
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit(req, { limit: 30, window: 60 });
+  if (!rl.ok) return rateLimitResponse(rl.remaining, rl.reset);
   const apiKey = await validateApiKey(req);
   if (!apiKey) return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
 

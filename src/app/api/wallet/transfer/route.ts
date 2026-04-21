@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, badRequest, ok } from "@/lib/api-utils";
 import { TRANSFER_FEE_RATE } from "@/lib/constants";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit(req, { limit: 10, window: 60 });
+  if (!rl.ok) return rateLimitResponse(rl.remaining, rl.reset);
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
