@@ -3,18 +3,34 @@ import { getAuthUser, unauthorized, badRequest, ok } from "@/lib/api-utils";
 import { STOCK_FEE_RATE } from "@/lib/constants";
 import { NextRequest } from "next/server";
 
-// GET: 株一覧
-export async function GET() {
-  const stocks = await prisma.stock.findMany({
-    include: { priceHistory: { orderBy: { createdAt: "desc" }, take: 30 } },
-  });
-  return ok(
-    stocks.map((s) => ({
+// GET: 株一覧（検索・ページネーション対応）
+export async function GET(req: NextRequest) {
+  const q = req.nextUrl.searchParams.get("q") || "";
+  const page = parseInt(req.nextUrl.searchParams.get("page") || "1");
+  const limit = 20;
+
+  const where = q ? { name: { contains: q, mode: "insensitive" as const } } : {};
+  const [stocks, total] = await Promise.all([
+    prisma.stock.findMany({
+      where,
+      include: { priceHistory: { orderBy: { createdAt: "desc" }, take: 30 } },
+      orderBy: { currentPrice: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.stock.count({ where }),
+  ]);
+
+  return ok({
+    stocks: stocks.map((s) => ({
       ...s,
       currentPrice: s.currentPrice.toString(),
       priceHistory: s.priceHistory.map((p) => ({ price: p.price.toString(), createdAt: p.createdAt })),
-    }))
-  );
+    })),
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+  });
 }
 
 // POST: 売買

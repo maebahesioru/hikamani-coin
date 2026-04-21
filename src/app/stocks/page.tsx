@@ -38,12 +38,42 @@ function StocksContent() {
   const [qty, setQty] = useState<Record<string, string>>({});
   const [betAmounts, setBetAmounts] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [seeding, setSeeding] = useState(false);
+
+  const fetchStocks = async (q = search, p = page) => {
+    const res = await fetch(`/api/stocks?q=${encodeURIComponent(q)}&page=${p}`);
+    if (res.ok) {
+      const data = await res.json();
+      setStocks(data.stocks);
+      setPages(data.pages);
+      setTotal(data.total);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
-    fetch("/api/stocks").then((r) => r.json()).then(setStocks);
+    fetchStocks();
     fetch("/api/bets").then((r) => r.json()).then(setMarkets);
   }, [status]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    fetchStocks(search, 1);
+  };
+
+  const seedAll = async () => {
+    setSeeding(true);
+    const res = await fetch("/api/stocks/seed", { method: "POST" });
+    const data = await res.json();
+    setMsg(`${data.total}件の銘柄を登録しました`);
+    setSeeding(false);
+    fetchStocks("", 1);
+  };
 
   const trade = async (stockId: string, action: string) => {
     setMsg("");
@@ -106,7 +136,27 @@ function StocksContent() {
 
       {/* Stocks tab */}
       {tab === "stocks" && (
-        <div className="grid gap-4">
+        <div>
+          <div className="mb-4 flex gap-2">
+            <form onSubmit={handleSearch} className="flex flex-1 gap-2">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ユーザー名で検索..."
+                className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+              />
+              <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">検索</button>
+            </form>
+            <button
+              onClick={seedAll}
+              disabled={seeding}
+              className="rounded border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-dim)] hover:border-[var(--accent)] disabled:opacity-50"
+            >
+              {seeding ? "登録中..." : `全員登録`}
+            </button>
+          </div>
+          <p className="mb-3 text-xs text-[var(--text-dim)]">{total}件中 {stocks.length}件表示</p>
+          <div className="grid gap-4">
           {stocks.map((stock) => (
             <div key={stock.id} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
               <div className="mb-4 flex items-center justify-between">
@@ -147,6 +197,14 @@ function StocksContent() {
             </div>
           ))}
           {stocks.length === 0 && <p className="text-[var(--text-dim)]">銘柄はまだ登録されていません</p>}
+          </div>
+          {pages > 1 && (
+            <div className="mt-4 flex justify-center gap-2">
+              <button onClick={() => { const p = Math.max(1, page-1); setPage(p); fetchStocks(search, p); }} disabled={page === 1} className="rounded border border-[var(--border)] px-3 py-1 text-sm disabled:opacity-30">←</button>
+              <span className="px-3 py-1 text-sm">{page} / {pages}</span>
+              <button onClick={() => { const p = Math.min(pages, page+1); setPage(p); fetchStocks(search, p); }} disabled={page === pages} className="rounded border border-[var(--border)] px-3 py-1 text-sm disabled:opacity-30">→</button>
+            </div>
+          )}
         </div>
       )}
 
