@@ -29,6 +29,8 @@ ENV PORT=3000
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
 npx prisma db push --accept-data-loss 2>&1 || echo "Migration skipped"
+npx tsx prisma/seed.ts 2>&1 || echo "Shop seed skipped"
+npx tsx prisma/seed-stocks.ts 2>&1 || echo "Stocks seed skipped"
 node server.js
 EOF
 RUN chmod +x /app/start.sh

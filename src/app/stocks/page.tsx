@@ -147,13 +147,6 @@ function StocksContent() {
               />
               <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">検索</button>
             </form>
-            <button
-              onClick={seedAll}
-              disabled={seeding}
-              className="rounded border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-dim)] hover:border-[var(--accent)] disabled:opacity-50"
-            >
-              {seeding ? "登録中..." : `全員登録`}
-            </button>
           </div>
           <p className="mb-3 text-xs text-[var(--text-dim)]">{total}件中 {stocks.length}件表示</p>
           <div className="grid gap-4">
