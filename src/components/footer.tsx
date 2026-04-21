@@ -6,6 +6,7 @@ export function Footer() {
       <div className="flex flex-wrap justify-center gap-4 mb-3">
         <Link href="/terms" className="hover:text-[var(--accent)]">利用規約</Link>
         <Link href="/privacy" className="hover:text-[var(--accent)]">プライバシーポリシー</Link>
+        <Link href="/api-docs" className="hover:text-[var(--accent)]">API</Link>
         <a href="https://hikakinmaniacoin.hikamer.f5.si/shop" className="hover:text-[var(--accent)]">ショップ</a>
         <a href="https://x.com/maebahesioru2" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)]">X (Twitter)</a>
         <a href="https://discord.gg/26U6r5xMBx" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)]">Discord</a>
