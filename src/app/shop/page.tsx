@@ -74,7 +74,13 @@ function ShopContent() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setConfirm({ slug: item.slug, name: item.name, price: item.price })}
+                    onClick={() => {
+                      if (["sponsor-30d","sponsor-forever","sponsor-big-forever"].includes(item.slug)) {
+                        window.location.href = `/checkout/sponsor?item=${item.slug}`;
+                      } else {
+                        setConfirm({ slug: item.slug, name: item.name, price: item.price });
+                      }
+                    }}
                     className="mt-3 w-full rounded bg-[var(--accent)] py-1.5 text-sm font-semibold text-black hover:bg-[var(--accent-dim)]"
                   >
                     購入
