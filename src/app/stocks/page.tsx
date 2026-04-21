@@ -13,15 +13,36 @@ interface Stock {
   priceHistory: { price: string; createdAt: string }[];
 }
 
+interface BetMarket {
+  id: string;
+  question: string;
+  description: string | null;
+  category: string;
+  stockName: string | null;
+  endsAt: string;
+  resolved: boolean;
+  outcome: boolean | null;
+  yesPool: string;
+  noPool: string;
+  totalPool: string;
+  yesOdds: number;
+  noOdds: number;
+  betCount: number;
+}
+
 function StocksContent() {
   const { status } = useSession();
+  const [tab, setTab] = useState<"stocks" | "bets">("stocks");
   const [stocks, setStocks] = useState<Stock[]>([]);
+  const [markets, setMarkets] = useState<BetMarket[]>([]);
   const [qty, setQty] = useState<Record<string, string>>({});
+  const [betAmounts, setBetAmounts] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
     fetch("/api/stocks").then((r) => r.json()).then(setStocks);
+    fetch("/api/bets").then((r) => r.json()).then(setMarkets);
   }, [status]);
 
   const trade = async (stockId: string, action: string) => {
@@ -36,61 +57,160 @@ function StocksContent() {
     fetch("/api/stocks").then((r) => r.json()).then(setStocks);
   };
 
+  const placeBet = async (marketId: string, side: boolean) => {
+    setMsg("");
+    const amount = betAmounts[marketId] || "100";
+    const res = await fetch("/api/bets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ marketId, side, amount }),
+    });
+    const data = await res.json();
+    setMsg(data.message || data.error || "エラー");
+    fetch("/api/bets").then((r) => r.json()).then(setMarkets);
+  };
+
+  const yesPercent = (m: BetMarket) => {
+    const total = Number(m.totalPool);
+    return total > 0 ? Math.round((Number(m.yesPool) / total) * 100) : 50;
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">ヒカマーズ株</h1>
-      <p className="mb-4 text-sm text-[var(--text-dim)]">
-        ツイートの勢い、名前・プロフ・アイコン変更などで株価が変動します
-      </p>
-      {msg && <p className="mb-4 rounded bg-[var(--card)] p-3 text-sm">{msg}</p>}
-      <div className="grid gap-4">
-        {stocks.map((stock) => (
-          <div key={stock.id} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold">{stock.name}</h3>
-                {stock.description && <p className="text-xs text-[var(--text-dim)]">{stock.description}</p>}
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-[var(--accent)]">{Number(stock.currentPrice).toLocaleString()}</p>
-                <p className="text-xs text-[var(--text-dim)]">HKM / 株</p>
-              </div>
-            </div>
-            {/* Mini price chart */}
-            {stock.priceHistory.length > 1 && (
-              <div className="mb-4 flex h-12 items-end gap-0.5">
-                {stock.priceHistory.slice().reverse().map((p, i) => {
-                  const prices = stock.priceHistory.map((h) => Number(h.price));
-                  const max = Math.max(...prices);
-                  const min = Math.min(...prices);
-                  const range = max - min || 1;
-                  const height = ((Number(p.price) - min) / range) * 100;
-                  return <div key={i} className="flex-1 rounded-t bg-[var(--accent)]" style={{ height: `${Math.max(height, 5)}%` }} />;
-                })}
-              </div>
-            )}
-            <div className="flex gap-2">
-              <input
-                type="number"
-                min="1"
-                value={qty[stock.id] || "1"}
-                onChange={(e) => setQty({ ...qty, [stock.id]: e.target.value })}
-                className="w-20 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-sm"
-              />
-              <button onClick={() => trade(stock.id, "BUY")} className="rounded bg-green-600 px-4 py-1 text-sm font-semibold text-white">
-                買い
-              </button>
-              <button onClick={() => trade(stock.id, "SELL")} className="rounded bg-red-600 px-4 py-1 text-sm font-semibold text-white">
-                売り
-              </button>
-              <button onClick={() => trade(stock.id, "SHORT_SELL")} className="rounded border border-red-600 px-4 py-1 text-sm text-red-400">
-                空売り
-              </button>
-            </div>
-          </div>
-        ))}
-        {stocks.length === 0 && <p className="text-[var(--text-dim)]">銘柄はまだ登録されていません</p>}
+      <h1 className="mb-2 text-2xl font-bold">ヒカマーズ株</h1>
+      <p className="mb-6 text-sm text-[var(--text-dim)]">ツイートの勢い・名前変更・アイコン変更で株価が変動＆賭けができる</p>
+
+      {msg && <p className="mb-4 rounded bg-[var(--card)] border border-[var(--border)] p-3 text-sm">{msg}</p>}
+
+      {/* Tabs */}
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setTab("stocks")}
+          className={`rounded px-4 py-2 text-sm font-semibold ${tab === "stocks" ? "bg-[var(--accent)] text-black" : "bg-[var(--card)] text-[var(--text-dim)]"}`}
+        >
+          株取引
+        </button>
+        <button
+          onClick={() => setTab("bets")}
+          className={`rounded px-4 py-2 text-sm font-semibold ${tab === "bets" ? "bg-[var(--accent)] text-black" : "bg-[var(--card)] text-[var(--text-dim)]"}`}
+        >
+          賭けマーケット
+        </button>
       </div>
+
+      {/* Stocks tab */}
+      {tab === "stocks" && (
+        <div className="grid gap-4">
+          {stocks.map((stock) => (
+            <div key={stock.id} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">{stock.name}</h3>
+                  {stock.description && <p className="text-xs text-[var(--text-dim)]">{stock.description}</p>}
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-[var(--accent)]">{Number(stock.currentPrice).toLocaleString()}</p>
+                  <p className="text-xs text-[var(--text-dim)]">HKM / 株</p>
+                </div>
+              </div>
+              {stock.priceHistory.length > 1 && (
+                <div className="mb-4 flex h-16 items-end gap-0.5">
+                  {stock.priceHistory.slice().reverse().map((p, i) => {
+                    const prices = stock.priceHistory.map((h) => Number(h.price));
+                    const max = Math.max(...prices);
+                    const min = Math.min(...prices);
+                    const range = max - min || 1;
+                    const height = ((Number(p.price) - min) / range) * 100;
+                    const isUp = i > 0 && Number(p.price) >= Number(stock.priceHistory.slice().reverse()[i - 1]?.price || 0);
+                    return <div key={i} className={`flex-1 rounded-t ${isUp ? "bg-green-500" : "bg-red-500"}`} style={{ height: `${Math.max(height, 5)}%` }} />;
+                  })}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={qty[stock.id] || "1"}
+                  onChange={(e) => setQty({ ...qty, [stock.id]: e.target.value })}
+                  className="w-20 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-sm"
+                />
+                <button onClick={() => trade(stock.id, "BUY")} className="rounded bg-green-600 px-4 py-1 text-sm font-semibold text-white">買い</button>
+                <button onClick={() => trade(stock.id, "SELL")} className="rounded bg-red-600 px-4 py-1 text-sm font-semibold text-white">売り</button>
+                <button onClick={() => trade(stock.id, "SHORT_SELL")} className="rounded border border-red-600 px-4 py-1 text-sm text-red-400">空売り</button>
+              </div>
+            </div>
+          ))}
+          {stocks.length === 0 && <p className="text-[var(--text-dim)]">銘柄はまだ登録されていません</p>}
+        </div>
+      )}
+
+      {/* Bets tab - Polymarket style */}
+      {tab === "bets" && (
+        <div className="grid gap-4">
+          {markets.map((m) => (
+            <div key={m.id} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+              <div className="mb-1 flex items-start justify-between">
+                <div>
+                  {m.stockName && <span className="mr-2 rounded bg-[var(--accent)] px-2 py-0.5 text-xs font-semibold text-black">{m.stockName}</span>}
+                  <span className="rounded bg-[var(--border)] px-2 py-0.5 text-xs">{m.category}</span>
+                </div>
+                <span className="text-xs text-[var(--text-dim)]">
+                  {new Date(m.endsAt).toLocaleDateString("ja-JP")} まで
+                </span>
+              </div>
+              <h3 className="mb-3 mt-2 text-lg font-bold">{m.question}</h3>
+              {m.description && <p className="mb-3 text-xs text-[var(--text-dim)]">{m.description}</p>}
+
+              {/* Odds bar */}
+              <div className="mb-3 overflow-hidden rounded-full bg-[var(--border)] h-8 flex">
+                <div
+                  className="flex items-center justify-center bg-green-600 text-xs font-bold text-white transition-all"
+                  style={{ width: `${yesPercent(m)}%` }}
+                >
+                  YES {yesPercent(m)}%
+                </div>
+                <div
+                  className="flex items-center justify-center bg-red-600 text-xs font-bold text-white transition-all"
+                  style={{ width: `${100 - yesPercent(m)}%` }}
+                >
+                  NO {100 - yesPercent(m)}%
+                </div>
+              </div>
+
+              <div className="mb-3 flex gap-4 text-xs text-[var(--text-dim)]">
+                <span>プール: {Number(m.totalPool).toLocaleString()} HKM</span>
+                <span>参加者: {m.betCount}人</span>
+                <span>YESオッズ: x{m.yesOdds.toFixed(2)}</span>
+                <span>NOオッズ: x{m.noOdds.toFixed(2)}</span>
+              </div>
+
+              {!m.resolved ? (
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="10"
+                    placeholder="HKM"
+                    value={betAmounts[m.id] || ""}
+                    onChange={(e) => setBetAmounts({ ...betAmounts, [m.id]: e.target.value })}
+                    className="w-24 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-sm"
+                  />
+                  <button onClick={() => placeBet(m.id, true)} className="rounded bg-green-600 px-6 py-1.5 text-sm font-semibold text-white hover:bg-green-700">
+                    YES
+                  </button>
+                  <button onClick={() => placeBet(m.id, false)} className="rounded bg-red-600 px-6 py-1.5 text-sm font-semibold text-white hover:bg-red-700">
+                    NO
+                  </button>
+                </div>
+              ) : (
+                <div className={`rounded px-4 py-2 text-sm font-bold ${m.outcome ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"}`}>
+                  結果: {m.outcome ? "YES" : "NO"} が勝利
+                </div>
+              )}
+            </div>
+          ))}
+          {markets.length === 0 && <p className="text-[var(--text-dim)]">賭けマーケットはまだありません</p>}
+        </div>
+      )}
     </div>
   );
 }

@@ -35,6 +35,7 @@ model User {
   bonusClaims      BonusClaim[]
   apiKeys          ApiKey[]
   ltcDeposits      LtcDeposit[]
+  bets             Bet[]
 }
 
 model Session {
@@ -202,6 +203,7 @@ model Stock {
   priceHistory StockPrice[]
   positions    StockPosition[]
   orders       StockOrder[]
+  betMarkets   BetMarket[]
 }
 
 model StockPrice {
@@ -281,4 +283,39 @@ model ApiKey {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   lastUsedAt  DateTime?
+}
+
+
+// Polymarket風 賭けマーケット
+model BetMarket {
+  id          String       @id @default(cuid())
+  stockId     String?
+  stock       Stock?       @relation(fields: [stockId], references: [id])
+  question    String       // 「ヒカキンは今週名前を変更するか？」
+  description String?
+  category    String       @default("general") // name_change, icon_change, profile_change, tweet_momentum
+  endsAt      DateTime     // 締切
+  resolved    Boolean      @default(false)
+  outcome     Boolean?     // true=YES won, false=NO won, null=unresolved
+  yesPool     BigInt       @default(0) // YES側の合計HKM
+  noPool      BigInt       @default(0) // NO側の合計HKM
+  createdAt   DateTime     @default(now())
+  bets        Bet[]
+
+  @@index([resolved, endsAt])
+}
+
+model Bet {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketId    String
+  market      BetMarket @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  side        Boolean   // true=YES, false=NO
+  amount      BigInt
+  payout      BigInt?   // null until resolved
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([marketId])
 }
