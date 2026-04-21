@@ -123,6 +123,24 @@ function AdsContent() {
 
       {/* 広告非表示について */}
       <div className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-3 text-lg font-bold">サイトに広告を設置して収益を得る</h2>
+        <p className="text-sm text-[var(--text-dim)] mb-3">
+          自分のサイトにHKM広告を設置すると、広告が表示されるたびに<strong className="text-[var(--accent)]">1 HKM</strong>が付与されます。
+        </p>
+        <div className="rounded bg-[var(--bg)] p-3 text-xs font-mono mb-3 overflow-x-auto">
+          {`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" async></script>`}
+        </div>
+        <ul className="text-xs text-[var(--text-dim)] space-y-1 list-disc pl-4 mb-3">
+          <li>HKM広告主の広告を優先表示</li>
+          <li>広告非表示購入者には表示しない</li>
+          <li>HKM広告がない場合は何も表示しない（AdSenseと競合しない）</li>
+          <li>収益を受け取るにはAPIキーが必要です（準備中）</li>
+        </ul>
+        <a href="/api-docs" className="text-sm text-[var(--accent)] hover:underline">APIドキュメントを見る →</a>
+      </div>
+
+      {/* 広告非表示について */}
+      <div className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-3 text-lg font-bold">広告を非表示にする</h2>
         <p className="text-sm text-[var(--text-dim)] mb-3">
           ショップで「各サイト広告30日非表示(1,500 HKM)」または「永久非表示(15,000 HKM)」を購入すると、

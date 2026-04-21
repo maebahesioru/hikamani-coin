@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+const AD_REVENUE_SHARE = 0.2; // 20% to site owner
+
 // GET /api/ad-serve?site=xxx&sessionToken=yyy
 // Returns: { show: false } | { show: true, ad: {...} | null }
 export async function GET(req: NextRequest) {
@@ -24,38 +26,46 @@ export async function GET(req: NextRequest) {
   }
 
   if (hideAds) {
-    return NextResponse.json({ show: false }, {
-      headers: corsHeaders(req),
-    });
+    return NextResponse.json({ show: false }, { headers: corsHeaders(req) });
   }
 
-  // Get active HKM ads for this site
+  // Get active HKM ads
   const now = new Date();
   const ads = await prisma.ad.findMany({
-    where: {
-      active: true,
-      expiresAt: { gt: now },
-      OR: [
-        { type: "ALL_SITES" },
-        { type: "SINGLE_SITE" },
-      ],
-    },
+    where: { active: true, expiresAt: { gt: now } },
     orderBy: { createdAt: "desc" },
     take: 10,
   });
 
-  // Pick random ad
   const ad = ads.length > 0 ? ads[Math.floor(Math.random() * ads.length)] : null;
 
+  // Revenue share: pay site owner when ad is shown
+  if (ad) {
+    const apiKey = req.headers.get("x-api-key") || req.nextUrl.searchParams.get("apiKey");
+    if (apiKey) {
+      const key = await prisma.apiKey.findUnique({ where: { key: apiKey, active: true } });
+      if (key && key.userId !== ad.userId) {
+        // Pay 20% of ad cost to site owner (per impression, capped)
+        const rewardPerImpression = BigInt(Math.floor(1)); // 1 HKM per impression
+        try {
+          await prisma.$transaction(async (tx) => {
+            const adOwnerWallet = await tx.wallet.findUnique({ where: { userId: ad.userId } });
+            if (adOwnerWallet && adOwnerWallet.balance >= rewardPerImpression) {
+              await tx.wallet.update({ where: { userId: ad.userId }, data: { balance: { decrement: rewardPerImpression } } });
+              await tx.wallet.update({ where: { userId: key.userId }, data: { balance: { increment: rewardPerImpression } } });
+              await tx.transaction.create({
+                data: { type: "BONUS", amount: rewardPerImpression, senderId: ad.userId, receiverId: key.userId, memo: `広告収益: ${site}` },
+              });
+            }
+          });
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
   return NextResponse.json({ show: true, ad: ad ? {
-    id: ad.id,
-    content: ad.content,
-    imageUrl: ad.imageUrl,
-    linkUrl: ad.linkUrl,
-    type: ad.type,
-  } : null }, {
-    headers: corsHeaders(req),
-  });
+    id: ad.id, content: ad.content, imageUrl: ad.imageUrl, linkUrl: ad.linkUrl, type: ad.type,
+  } : null }, { headers: corsHeaders(req) });
 }
 
 function corsHeaders(req: NextRequest) {
