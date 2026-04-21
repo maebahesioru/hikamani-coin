@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, badRequest, ok } from "@/lib/api-utils";
-import { STOCK_FEE_RATE } from "@/lib/constants";
+import { STOCK_FEE_RATE, STOCK_FEE_RATE_DISCOUNTED } from "@/lib/constants";
 import { fetchFxProfile } from "@/lib/twitter";
 import { redis } from "@/lib/redis";
 import { NextRequest } from "next/server";
