@@ -19,7 +19,26 @@ export async function POST() {
 
     const momentumDelta = prevMomentum > 0 ? (metrics.momentum - prevMomentum) / prevMomentum : 0;
     const randomFactor = (Math.random() - 0.45) * 0.02;
-    const changeRate = Math.max(-0.10, Math.min(0.15, momentumDelta * 0.5 + randomFactor));
+
+    // Full Yahoo metrics impact
+    let yahooImpact = momentumDelta * 0.5 + randomFactor;
+    // 動画・GIFは話題性が高い
+    yahooImpact += metrics.videoCount * 0.005;
+    yahooImpact += metrics.gifCount * 0.003;
+    // 認証済みユーザーに言及されると上昇
+    yahooImpact += metrics.blueVerifiedCount * 0.003;
+    yahooImpact += metrics.businessVerifiedCount * 0.005;
+    // センシティブツイートは下落
+    yahooImpact -= metrics.sensitiveCount * 0.01;
+    // 深夜ツイートは微下落（炎上リスク）
+    yahooImpact -= metrics.nightTweetCount * 0.002;
+    // ハッシュタグ・メンション多用は話題性
+    yahooImpact += Math.min(metrics.hashtagCount * 0.001, 0.02);
+    yahooImpact += Math.min(metrics.mentionCount * 0.001, 0.02);
+    // 引用RTされると上昇
+    yahooImpact += Math.min(metrics.quoteCount * 0.002, 0.03);
+
+    const changeRate = Math.max(-0.10, Math.min(0.15, yahooImpact));
     const oldPrice = Number(stock.currentPrice);
     const newPrice = BigInt(Math.max(100, Math.round(oldPrice * (1 + changeRate))));
 
@@ -110,7 +129,9 @@ export async function POST() {
               case "username_change": priceImpact += 12; break;
               case "icon_change":     priceImpact += 5; break;
               case "banner_change":   priceImpact += 3; break;
-              case "bio_change":      priceImpact += 2; break;
+              case "bio_change":           priceImpact += 2; break;
+              case "bio_url_change":       priceImpact += 3; break;  // bio内リンク変更（Discord追加等）
+              case "website_display_change": priceImpact += 1; break;
               case "location_change": priceImpact += 1; break;
               case "website_change":  priceImpact += 2; break;
               case "based_in_change": priceImpact += 1; break;

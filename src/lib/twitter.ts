@@ -36,9 +36,12 @@ export interface FxProfile {
   description: string;
   location: string;
   websiteUrl: string | null;
+  websiteDisplayUrl: string | null;
   bannerUrl: string | null;
   avatarUrl: string | null;
   joined: string;
+  verifiedAt: string | null;
+  bioFacets: { type: string; original?: string; replacement?: string }[];
   usernameChangesCount: number;
   usernameChangesLast: string;
   ageDays: number;
@@ -77,9 +80,12 @@ export async function fetchFxProfile(username: string): Promise<FxProfile | null
           description: normalizeDesc(u.description || "", u.website?.url),
           location: u.location || "",
           websiteUrl: u.website?.url?.replace(/\/$/, "") || null,
+          websiteDisplayUrl: u.website?.display_url || null,
           bannerUrl: u.banner_url || null,
           avatarUrl: (u.avatar_url || "").replace("_normal", "") || null,
           joined,
+          verifiedAt: v.verified_at || null,
+          bioFacets: (u.raw_description?.facets || []) as { type: string; original?: string; replacement?: string }[],
           usernameChangesCount: uc.count || 0,
           usernameChangesLast: uc.last_changed_at || "",
           ageDays: ageDays(joined),
@@ -107,7 +113,8 @@ function deadProfile(username: string): FxProfile {
     id: "", name: username, screenName: username, alive: false, protected: false,
     verified: false, verificationType: null, source: "", followers: 0, following: 0,
     tweets: 0, likes: 0, mediaCount: 0, description: "", location: "",
-    websiteUrl: null, bannerUrl: null, avatarUrl: null, joined: "",
+    websiteUrl: null, websiteDisplayUrl: null, bannerUrl: null, avatarUrl: null, joined: "",
+    verifiedAt: null, bioFacets: [],
     usernameChangesCount: 0, usernameChangesLast: "", ageDays: 0, basedIn: "",
   };
 }
@@ -160,6 +167,13 @@ export function diffProfiles(username: string, prev: FxProfile, curr: FxProfile)
     changes.push({ type: "unverified", text: `${tag}が認証バッジ喪失`, username });
   if (prev.description !== curr.description)
     changes.push({ type: "bio_change", text: `${tag}のbioが変更`, username });
+  // bio内リンク変化
+  const prevUrls = prev.bioFacets.filter(f => f.type === "url").map(f => f.replacement || f.original || "").sort().join(",");
+  const currUrls = curr.bioFacets.filter(f => f.type === "url").map(f => f.replacement || f.original || "").sort().join(",");
+  if (prevUrls !== currUrls)
+    changes.push({ type: "bio_url_change", text: `${tag}のbio内リンクが変更`, username });
+  if (prev.websiteDisplayUrl !== curr.websiteDisplayUrl && curr.websiteDisplayUrl)
+    changes.push({ type: "website_display_change", text: `${tag}のプロフィールURL表示名が変更`, username });
   if (prev.location !== curr.location)
     changes.push({ type: "location_change", text: `${tag}の場所が変更: "${prev.location || "なし"}" → "${curr.location || "なし"}"`, username });
   if (prev.websiteUrl !== curr.websiteUrl)
@@ -182,6 +196,17 @@ export interface TweetMetrics {
   totalReplies: number;
   totalQuotes: number;
   momentum: number;
+  sensitiveCount: number;       // possiblySensitive=trueの数
+  mediaCount: number;           // メディア付きツイート数
+  videoCount: number;           // 動画ツイート数
+  gifCount: number;             // GIFツイート数
+  hashtagCount: number;         // ハッシュタグ使用数
+  mentionCount: number;         // メンション数
+  replyCount: number;           // リプライ数（inReplyTo != ""）
+  quoteCount: number;           // 引用ツイート数
+  blueVerifiedCount: number;    // 認証済みユーザーのツイート数
+  businessVerifiedCount: number;// 企業認証ユーザーのツイート数
+  nightTweetCount: number;      // 深夜(0-5時)ツイート数
   topTweets: { text: string; likes: number; rts: number; replies: number; quotes: number; mediaType: string[]; url: string }[];
 }
 
@@ -196,41 +221,90 @@ export async function getTweetMomentum(query: string, hours = 24): Promise<Tweet
     });
     if (!res.ok) return emptyMetrics();
     const data = await res.json();
-    const entries = data.timeline?.entry ?? [];
+    const entries: Record<string, unknown>[] = data.timeline?.entry ?? [];
     const total = data.timeline?.head?.totalResultsAvailable ?? entries.length;
 
     let totalLikes = 0, totalRts = 0, totalReplies = 0, totalQuotes = 0;
-    const topTweets = entries.slice(0, 10).map((e: Record<string, unknown>) => {
+    let sensitiveCount = 0, mediaCount = 0, videoCount = 0, gifCount = 0;
+    let hashtagCount = 0, mentionCount = 0, replyCount = 0, quoteCount = 0;
+    let blueVerifiedCount = 0, businessVerifiedCount = 0, nightTweetCount = 0;
+
+    const topTweets = entries.slice(0, 10).map((e) => {
       const likes = (e.likesCount as number) ?? 0;
       const rts = (e.rtCount as number) ?? 0;
       const replies = (e.replyCount as number) ?? 0;
       const quotes = (e.qtCount as number) ?? 0;
-      totalLikes += likes;
-      totalRts += rts;
-      totalReplies += replies;
-      totalQuotes += quotes;
-      const text = ((e.displayText as string) || "").slice(0, 100);
-      return { text, likes, rts, replies, quotes, mediaType: (e.mediaType as string[]) || [], url: (e.url as string) || "" };
+      totalLikes += likes; totalRts += rts; totalReplies += replies; totalQuotes += quotes;
+
+      if (e.possiblySensitive) sensitiveCount++;
+      const mt = (e.mediaType as string[]) ?? [];
+      if (mt.length > 0) mediaCount++;
+      if (mt.includes("video")) videoCount++;
+      if (mt.includes("animated_gif")) gifCount++;
+      if (((e.hashtags as unknown[]) ?? []).length > 0) hashtagCount++;
+      if (((e.mentions as unknown[]) ?? []).length > 0) mentionCount++;
+      if (e.inReplyTo) replyCount++;
+      if (e.quotedTweet) quoteCount++;
+      const badge = (e.badge as Record<string, string>) ?? {};
+      if (badge.type === "blue") blueVerifiedCount++;
+      if (badge.type === "business") businessVerifiedCount++;
+      const createdAt = (e.createdAt as number) ?? 0;
+      const hour = new Date(createdAt * 1000).getHours();
+      if (hour >= 0 && hour < 5) nightTweetCount++;
+
+      return {
+        text: ((e.displayText as string) || "").slice(0, 100),
+        likes, rts, replies, quotes,
+        mediaType: mt,
+        url: (e.url as string) || "",
+      };
     });
 
-    // Count remaining entries
     for (let i = 10; i < entries.length; i++) {
       const e = entries[i];
-      totalLikes += e.likesCount ?? 0;
-      totalRts += e.rtCount ?? 0;
-      totalReplies += e.replyCount ?? 0;
-      totalQuotes += e.qtCount ?? 0;
+      totalLikes += (e.likesCount as number) ?? 0;
+      totalRts += (e.rtCount as number) ?? 0;
+      totalReplies += (e.replyCount as number) ?? 0;
+      totalQuotes += (e.qtCount as number) ?? 0;
+      if (e.possiblySensitive) sensitiveCount++;
+      const mt = (e.mediaType as string[]) ?? [];
+      if (mt.length > 0) mediaCount++;
+      if (mt.includes("video")) videoCount++;
+      if (mt.includes("animated_gif")) gifCount++;
+      if (((e.hashtags as unknown[]) ?? []).length > 0) hashtagCount++;
+      if (((e.mentions as unknown[]) ?? []).length > 0) mentionCount++;
+      if (e.inReplyTo) replyCount++;
+      if (e.quotedTweet) quoteCount++;
+      const badge = (e.badge as Record<string, string>) ?? {};
+      if (badge.type === "blue") blueVerifiedCount++;
+      if (badge.type === "business") businessVerifiedCount++;
+      const createdAt = (e.createdAt as number) ?? 0;
+      const hour = new Date(createdAt * 1000).getHours();
+      if (hour >= 0 && hour < 5) nightTweetCount++;
     }
 
-    const momentum = total * 10 + totalLikes + totalRts * 3 + totalReplies * 2 + totalQuotes * 2;
-    return { tweetCount: total, totalLikes, totalRts, totalReplies, totalQuotes, momentum, topTweets };
+    const momentum = total * 10 + totalLikes + totalRts * 3 + totalReplies * 2 + totalQuotes * 2
+      + videoCount * 5 + gifCount * 3 + blueVerifiedCount * 2 + businessVerifiedCount * 3
+      - sensitiveCount * 5;
+
+    return {
+      tweetCount: total, totalLikes, totalRts, totalReplies, totalQuotes, momentum,
+      sensitiveCount, mediaCount, videoCount, gifCount, hashtagCount, mentionCount,
+      replyCount, quoteCount, blueVerifiedCount, businessVerifiedCount, nightTweetCount,
+      topTweets,
+    };
   } catch {
     return emptyMetrics();
   }
 }
 
 function emptyMetrics(): TweetMetrics {
-  return { tweetCount: 0, totalLikes: 0, totalRts: 0, totalReplies: 0, totalQuotes: 0, momentum: 0, topTweets: [] };
+  return {
+    tweetCount: 0, totalLikes: 0, totalRts: 0, totalReplies: 0, totalQuotes: 0, momentum: 0,
+    sensitiveCount: 0, mediaCount: 0, videoCount: 0, gifCount: 0, hashtagCount: 0,
+    mentionCount: 0, replyCount: 0, quoteCount: 0, blueVerifiedCount: 0,
+    businessVerifiedCount: 0, nightTweetCount: 0, topTweets: [],
+  };
 }
 
 export async function getUserMomentum(screenName: string, hours = 24): Promise<TweetMetrics> {
