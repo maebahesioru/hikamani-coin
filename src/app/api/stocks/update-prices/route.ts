@@ -102,16 +102,44 @@ export async function POST() {
             }
           }
 
-          // Boost/drop stock price based on change types
+          // Full price impact using all available columns
           let priceImpact = 0;
           for (const c of changes) {
-            if (c.type === "name_change") priceImpact += 5;
-            if (c.type === "icon_change") priceImpact += 3;
-            if (c.type === "suspension") priceImpact -= 50;
-            if (c.type === "revival") priceImpact += 30;
-            if (c.type === "verified") priceImpact += 20;
-            if (c.type === "lock") priceImpact -= 10;
-            if (c.type === "unlock") priceImpact += 5;
+            switch (c.type) {
+              case "name_change":     priceImpact += 8; break;
+              case "username_change": priceImpact += 12; break;
+              case "icon_change":     priceImpact += 5; break;
+              case "banner_change":   priceImpact += 3; break;
+              case "bio_change":      priceImpact += 2; break;
+              case "location_change": priceImpact += 1; break;
+              case "website_change":  priceImpact += 2; break;
+              case "based_in_change": priceImpact += 1; break;
+              case "suspension":      priceImpact -= 50; break;
+              case "revival":         priceImpact += 30; break;
+              case "verified":        priceImpact += 20; break;
+              case "unverified":      priceImpact -= 15; break;
+              case "lock":            priceImpact -= 10; break;
+              case "unlock":          priceImpact += 5; break;
+            }
+          }
+          if (curr.alive && prev.alive) {
+            const followerDelta = (curr.followers - prev.followers) / Math.max(prev.followers, 1);
+            priceImpact += Math.round(followerDelta * 30);
+            const tweetDelta = (curr.tweets - prev.tweets) / Math.max(prev.tweets, 1);
+            priceImpact += Math.round(tweetDelta * 10);
+            const likesDelta = (curr.likes - prev.likes) / Math.max(prev.likes, 1);
+            priceImpact += Math.round(likesDelta * 5);
+            const mediaDelta = curr.mediaCount - prev.mediaCount;
+            if (mediaDelta > 0) priceImpact += Math.min(mediaDelta * 2, 10);
+            if (curr.usernameChangesCount > prev.usernameChangesCount) priceImpact += 15;
+            for (const m of [100, 365, 730, 1000, 2000]) {
+              if (prev.ageDays < m && curr.ageDays >= m) priceImpact += 5;
+            }
+            if (curr.source && prev.source !== curr.source) priceImpact += 2;
+            const followerDrop = prev.followers - curr.followers;
+            if (followerDrop > 100 && followerDrop / prev.followers > 0.1) {
+              priceImpact -= Math.min(Math.round(followerDrop / prev.followers * 50), 30);
+            }
           }
           if (priceImpact !== 0) {
             const rate = priceImpact / 100;
