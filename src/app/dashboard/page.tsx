@@ -12,6 +12,7 @@ interface UserData {
   displayName: string;
   linkedAccounts: string[];
   dailyClaimed: boolean;
+  loginHistory: { date: string; streak: number; amount: string }[];
 }
 
 interface Transaction {
@@ -27,6 +28,50 @@ const PROVIDERS = [
   { id: "google", name: "Google", bonus: 200, color: "bg-white !text-gray-800 border border-gray-300" },
   { id: "twitter", name: "X (Twitter)", bonus: 200, color: "bg-black" },
 ];
+
+function LoginCalendar({ history }: { history: { date: string; streak: number; amount: string }[] }) {
+  const loginSet = new Set(history.map((h) => h.date));
+  const loginMap = new Map(history.map((h) => [h.date, h]));
+
+  // Build last 30 days
+  const days: { date: string; label: string }[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const iso = d.toISOString().split("T")[0];
+    days.push({ date: iso, label: `${d.getMonth() + 1}/${d.getDate()}` });
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {days.map(({ date, label }) => {
+          const logged = loginSet.has(date);
+          const info = loginMap.get(date);
+          const isToday = date === new Date().toISOString().split("T")[0];
+          return (
+            <div
+              key={date}
+              title={logged ? `${label} ログイン済み (+${info?.amount} HKM, ${info?.streak}日連続)` : `${label} 未ログイン`}
+              className={`relative flex h-9 w-9 flex-col items-center justify-center rounded text-xs font-bold transition-all
+                ${logged ? "bg-[var(--accent)] text-black" : "bg-[var(--border)] text-[var(--text-dim)]"}
+                ${isToday ? "ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--card)]" : ""}
+              `}
+            >
+              <span className="text-[10px] leading-none opacity-70">{label}</span>
+              {logged && <span className="text-[9px] leading-none">✓</span>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex gap-4 text-xs text-[var(--text-dim)]">
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-[var(--accent)]" />ログイン済み</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-[var(--border)]" />未ログイン</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded ring-2 ring-[var(--accent)]" />今日</span>
+      </div>
+    </div>
+  );
+}
 
 function ReferralForm({ onSuccess }: { onSuccess: () => void }) {
   const [code, setCode] = useState("");
@@ -181,6 +226,12 @@ function DashboardContent() {
             </a>
           </div>
         </div>
+      </div>
+
+      {/* Login Calendar */}
+      <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-4 text-lg font-bold">ログインカレンダー（過去30日）</h2>
+        <LoginCalendar history={user.loginHistory} />
       </div>
 
       {/* Account linking */}

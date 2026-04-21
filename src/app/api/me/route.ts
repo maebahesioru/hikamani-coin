@@ -23,6 +23,15 @@ export async function GET() {
     where: { userId_date: { userId: user.id, date: today } },
   });
 
+  // Last 30 days login history
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+  const loginHistory = await prisma.dailyLogin.findMany({
+    where: { userId: user.id, date: { gte: thirtyDaysAgo } },
+    select: { date: true, streak: true, amount: true },
+    orderBy: { date: "asc" },
+  });
+
   return ok({
     id: user.id,
     username: user.username,
@@ -32,6 +41,11 @@ export async function GET() {
     balance: user.wallet?.balance.toString() ?? "0",
     streak: user.dailyLogins[0]?.streak ?? 0,
     dailyClaimed: !!todayLogin,
+    loginHistory: loginHistory.map((l) => ({
+      date: l.date.toISOString().split("T")[0],
+      streak: l.streak,
+      amount: l.amount.toString(),
+    })),
     linkedAccounts: user.linkedAccounts.map((a) => a.provider),
     stockPositions: user.stockPositions.map((p) => ({
       stockName: p.stock.name,
