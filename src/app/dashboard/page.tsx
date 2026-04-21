@@ -1,5 +1,5 @@
 "use client";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState, useCallback } from "react";
 import { SessionProvider } from "@/components/session-provider";
 import { Navbar } from "@/components/navbar";
@@ -21,13 +21,17 @@ interface Transaction {
   createdAt: string;
 }
 
+const PROVIDERS = [
+  { id: "discord", name: "Discord", bonus: 300, color: "bg-[#5865F2]" },
+  { id: "google", name: "Google", bonus: 200, color: "bg-white text-gray-800 border border-gray-300" },
+  { id: "twitter", name: "X (Twitter)", bonus: 200, color: "bg-black" },
+];
+
 function DashboardContent() {
   const { data: session, status } = useSession();
   const [user, setUser] = useState<UserData | null>(null);
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [dailyClaimed, setDailyClaimed] = useState(false);
-
-  // Transfer form
   const [recipientId, setRecipientId] = useState("");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
@@ -100,6 +104,27 @@ function DashboardContent() {
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <p className="text-sm text-[var(--text-dim)]">紹介コード</p>
           <p className="mt-1 break-all font-mono text-sm">{user.referralCode}</p>
+        </div>
+      </div>
+
+      {/* Account linking */}
+      <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-4 text-lg font-bold">アカウント連携</h2>
+        <p className="mb-3 text-xs text-[var(--text-dim)]">連携するとボーナスHKMがもらえます（一度きり）</p>
+        <div className="flex flex-wrap gap-3">
+          {PROVIDERS.map((p) => {
+            const linked = user.linkedAccounts.includes(p.id.toUpperCase());
+            return (
+              <button
+                key={p.id}
+                onClick={() => !linked && signIn(p.id, { callbackUrl: "/dashboard" })}
+                disabled={linked}
+                className={`rounded px-4 py-2 text-sm font-semibold ${linked ? "opacity-50 cursor-default bg-[var(--border)] text-[var(--text-dim)]" : `${p.color} text-white hover:opacity-90`}`}
+              >
+                {linked ? `✓ ${p.name} 連携済み` : `${p.name} 連携 (+${p.bonus} HKM)`}
+              </button>
+            );
+          })}
         </div>
       </div>
 
