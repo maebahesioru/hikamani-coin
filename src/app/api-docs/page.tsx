@@ -1,5 +1,6 @@
 ﻿import { SessionProvider } from "@/components/session-provider";
 import { Navbar } from "@/components/navbar";
+import { AdScriptTag } from "./ad-script-tag";
 
 const BASE = "https://hikakinmaniacoin.hikamer.f5.si";
 
@@ -187,7 +188,7 @@ export default function ApiDocsPage() {
         <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <h2 className="mb-3 text-xl font-bold">広告システム</h2>
           <p className="mb-3 text-sm text-[var(--text-dim)]">各サイトに1行貼るだけでHKM広告を表示できます。</p>
-          <pre className="rounded bg-[var(--bg)] p-3 text-xs overflow-x-auto mb-3">{`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" async></script>`}</pre>
+          <div className="mb-3"><AdScriptTag /></div>
           <ul className="text-sm text-[var(--text-dim)] space-y-1 list-disc pl-4 mb-4">
             <li>HKM広告主の広告を優先表示</li>
             <li>広告非表示購入者には表示しない</li>
@@ -195,8 +196,8 @@ export default function ApiDocsPage() {
             <li>広告管理: <a href="/ads" className="text-[var(--accent)] hover:underline">/ads</a></li>
           </ul>
           <h3 className="mb-2 text-sm font-bold">収益を受け取る</h3>
-          <p className="mb-2 text-sm text-[var(--text-dim)]">広告が表示されるたびに1 HKMが付与されます。<a href="/dashboard" className="text-[var(--accent)] hover:underline">ダッシュボード</a>からユーザーID入りのスクリプトタグをコピーして貼り付けてください。</p>
-          <pre className="rounded bg-[var(--bg)] p-3 text-xs overflow-x-auto mb-4">{`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" data-user-id="YOUR_USER_ID" async></script>`}</pre>
+          <p className="mb-2 text-sm text-[var(--text-dim)]">広告が表示されるたびに1 HKMが付与されます。ログイン済みの場合、下のタグにユーザーIDが自動で入ります。</p>
+          <div className="mb-4"><AdScriptTag /></div>
           <h3 className="mb-2 text-sm font-bold">カスタマイズ（data属性）</h3>
           <table className="w-full text-xs mb-3">
             <thead><tr className="border-b border-[var(--border)]"><th className="text-left py-1">属性</th><th className="text-left py-1">説明</th><th className="text-left py-1">デフォルト</th></tr></thead>
