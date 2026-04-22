@@ -11,7 +11,7 @@ const shopItems = [
   { slug: "ad-hide-forever", name: "各サイト広告永久非表示", description: "広告を永久に非表示", price: 15000n, category: "広告" },
   // Discord
   { slug: "discord-namecolor", name: "Discord名前色変更", description: "名前の色を変更", price: 1000n, category: "Discord", recurring: true },
-  { slug: "discord-vip", name: "Discord VIPチャンネル解放", description: "VIP限定チャンネルへのアクセス", price: 5000n, category: "Discord", recurring: true },
+  { slug: "discord-vip", name: "Discord VIPロール", description: "VIPロールを付与", price: 5000n, category: "Discord", recurring: true },
   // スポンサー
   { slug: "sponsor-30d", name: "ポータルスポンサー掲載30日", description: "ポータルサイトに30日間掲載", price: 3000n, category: "スポンサー" },
   { slug: "sponsor-forever", name: "ポータルスポンサー永久掲載", description: "ポータルサイトに永久掲載", price: 50000n, category: "スポンサー" },
