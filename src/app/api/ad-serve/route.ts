@@ -28,10 +28,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ show: false }, { headers: corsHeaders(req) });
   }
 
-  // Get active HKM ads
+  // Get active HKM ads (全サイト or このサイト指定のもの)
   const now = new Date();
   const ads = await prisma.ad.findMany({
-    where: { active: true, expiresAt: { gt: now } },
+    where: {
+      active: true,
+      expiresAt: { gt: now },
+      OR: [
+        { targetSite: null },
+        { targetSite: site },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     take: 10,
   });

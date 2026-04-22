@@ -19,17 +19,18 @@ export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
-  const { content, imageUrl, linkUrl, type } = await req.json() as {
-    content: string;
-    imageUrl?: string;
-    linkUrl?: string;
-    type: "ALL_SITES" | "SINGLE_SITE" | "POPUP" | "FIXED_BANNER" | "FULLSCREEN";
+  const { content, imageUrl, linkUrl, type, targetSite } = await req.json() as {
+    content: string; imageUrl?: string; linkUrl?: string;
+    type: string; targetSite?: string;
   };
 
   if (!content) return badRequest("広告テキストを入力してください");
 
   const PRICES: Record<string, bigint> = {
-    ALL_SITES: 2000n, SINGLE_SITE: 500n, POPUP: 3000n, FIXED_BANNER: 1500n, FULLSCREEN: 5000n,
+    ALL_SITES: 2000n, SINGLE_SITE: 500n,
+    POPUP: 3000n, POPUP_SINGLE: 800n,
+    FIXED_BANNER: 1500n, FIXED_BANNER_SINGLE: 400n,
+    FULLSCREEN: 5000n, FULLSCREEN_SINGLE: 1500n,
   };
   const cost = PRICES[type] ?? 2000n;
 
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     return tx.ad.create({
-      data: { userId: user.id, type, content, imageUrl, linkUrl, expiresAt },
+      data: { userId: user.id, type: type as never, content, imageUrl, linkUrl, targetSite, expiresAt },
     });
   });
 

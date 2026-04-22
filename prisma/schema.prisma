@@ -255,25 +255,29 @@ enum OrderType {
 }
 
 model Ad {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      AdType
-  content   String
-  imageUrl  String?
-  linkUrl   String?
-  startsAt  DateTime @default(now())
-  expiresAt DateTime
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        AdType
+  content     String
+  imageUrl    String?
+  linkUrl     String?
+  targetSite  String?  // 1サイト指定時のドメイン
+  startsAt    DateTime @default(now())
+  expiresAt   DateTime
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 }
 
 enum AdType {
-  ALL_SITES    // 全サイト表示
-  SINGLE_SITE  // 1サイト表示
-  POPUP        // ポップアップ
-  FIXED_BANNER // 右下固定バナー
-  FULLSCREEN   // フルスクリーン（ページ遷移時）
+  ALL_SITES         // 全サイト インフィード
+  SINGLE_SITE       // 1サイト インフィード
+  POPUP             // ポップアップ 全サイト
+  POPUP_SINGLE      // ポップアップ 1サイト
+  FIXED_BANNER      // 右下固定バナー 全サイト
+  FIXED_BANNER_SINGLE // 右下固定バナー 1サイト
+  FULLSCREEN        // フルスクリーン 全サイト
+  FULLSCREEN_SINGLE // フルスクリーン 1サイト
 }
 
 model ApiKey {

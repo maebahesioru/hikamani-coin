@@ -19,15 +19,22 @@ interface Ad {
 function AdsContent() {
   const { status } = useSession();
   const [ads, setAds] = useState<Ad[]>([]);
-  const [type, setType] = useState<"ALL_SITES" | "SINGLE_SITE" | "POPUP" | "FIXED_BANNER" | "FULLSCREEN">("ALL_SITES");
+  const [type, setType] = useState<string>("ALL_SITES");
+  const [targetSite, setTargetSite] = useState("");
+  const [sites, setSites] = useState<string[]>([]);
 
   const AD_TYPES = [
-    { value: "ALL_SITES",    label: "全サイト インフィード", price: 2000 },
-    { value: "SINGLE_SITE",  label: "1サイト インフィード",  price: 500 },
-    { value: "POPUP",        label: "ポップアップ",          price: 3000 },
-    { value: "FIXED_BANNER", label: "右下固定バナー",        price: 1500 },
-    { value: "FULLSCREEN",   label: "フルスクリーン",        price: 5000 },
+    { value: "ALL_SITES",           label: "インフィード 全サイト",    price: 2000 },
+    { value: "SINGLE_SITE",         label: "インフィード 1サイト",     price: 500 },
+    { value: "POPUP",               label: "ポップアップ 全サイト",    price: 3000 },
+    { value: "POPUP_SINGLE",        label: "ポップアップ 1サイト",     price: 800 },
+    { value: "FIXED_BANNER",        label: "右下固定バナー 全サイト",  price: 1500 },
+    { value: "FIXED_BANNER_SINGLE", label: "右下固定バナー 1サイト",   price: 400 },
+    { value: "FULLSCREEN",          label: "フルスクリーン 全サイト",  price: 5000 },
+    { value: "FULLSCREEN_SINGLE",   label: "フルスクリーン 1サイト",   price: 1500 },
   ] as const;
+
+  const isSingle = type.endsWith("_SINGLE") || type === "SINGLE_SITE";
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -36,6 +43,7 @@ function AdsContent() {
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
     fetch("/api/ads").then(r => r.json()).then(setAds);
+    fetch("/api/sites").then(r => r.json()).then(setSites);
   }, [status]);
 
   const submit = async (e: React.FormEvent) => {
@@ -44,7 +52,7 @@ function AdsContent() {
     const res = await fetch("/api/ads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, content, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined }),
+      body: JSON.stringify({ type, content, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined, targetSite: isSingle ? targetSite : undefined }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -80,6 +88,16 @@ function AdsContent() {
               ))}
             </div>
           </div>
+          {isSingle && (
+            <div>
+              <label className="mb-1 block text-sm font-semibold">対象サイト</label>
+              <select value={targetSite} onChange={e => setTargetSite(e.target.value)} required
+                className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm">
+                <option value="">サイトを選択...</option>
+                {sites.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-sm font-semibold">広告テキスト *</label>
             <textarea value={content} onChange={e => setContent(e.target.value)} required

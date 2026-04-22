@@ -123,9 +123,9 @@ export async function GET(req: NextRequest) {
     if (!data.show || !data.ad) return;
     var t = data.ad.type;
     if ((t === 'ALL_SITES' || t === 'SINGLE_SITE') && ALLOWED_TYPES.indexOf('infeed') !== -1) injectInfeed(data.ad, MAX_ADS);
-    else if (t === 'POPUP' && ALLOWED_TYPES.indexOf('popup') !== -1) showPopup(data.ad);
-    else if (t === 'FIXED_BANNER' && ALLOWED_TYPES.indexOf('fixed') !== -1) showFixedBanner(data.ad);
-    else if (t === 'FULLSCREEN' && ALLOWED_TYPES.indexOf('fullscreen') !== -1) showFullscreen(data.ad);
+    else if ((t === 'POPUP' || t === 'POPUP_SINGLE') && ALLOWED_TYPES.indexOf('popup') !== -1) showPopup(data.ad);
+    else if ((t === 'FIXED_BANNER' || t === 'FIXED_BANNER_SINGLE') && ALLOWED_TYPES.indexOf('fixed') !== -1) showFixedBanner(data.ad);
+    else if ((t === 'FULLSCREEN' || t === 'FULLSCREEN_SINGLE') && ALLOWED_TYPES.indexOf('fullscreen') !== -1) showFullscreen(data.ad);
   }
 
   function fetchAndShow() {
