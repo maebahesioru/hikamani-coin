@@ -112,26 +112,25 @@ function AdsContent() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-semibold">画像・GIF（任意・2MB以下）</label>
-            <div className="flex gap-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const fd = new FormData();
-                  fd.append("file", file);
-                  const res = await fetch("/api/upload", { method: "POST", body: fd });
-                  if (res.ok) {
-                    const { url } = await res.json();
-                    setImageUrl(window.location.origin + url);
-                  }
-                }}
-                className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm file:mr-2 file:rounded file:border-0 file:bg-[var(--accent)] file:px-2 file:py-1 file:text-xs file:font-semibold file:text-black"
-              />
-            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                // ローカルプレビュー即時表示
+                setImageUrl(URL.createObjectURL(file));
+                const fd = new FormData();
+                fd.append("file", file);
+                const res = await fetch("/api/upload", { method: "POST", body: fd });
+                if (res.ok) {
+                  const { url } = await res.json();
+                  setImageUrl(window.location.origin + url);
+                }
+              }}
+              className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm file:mr-2 file:rounded file:border-0 file:bg-[var(--accent)] file:px-2 file:py-1 file:text-xs file:font-semibold file:text-black"
+            />
             {imageUrl && <img src={imageUrl} alt="プレビュー" className="mt-2 max-h-32 rounded border border-[var(--border)]" />}
-            {imageUrl && <img src={imageUrl} alt="" className="mt-2 max-h-20 rounded" />}
           </div>
           <div>
             <label className="mb-1 block text-sm font-semibold">リンクURL（任意）</label>
