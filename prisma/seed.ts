@@ -10,7 +10,6 @@ const shopItems = [
   { slug: "ad-hide-30d", name: "各サイト広告30日非表示", description: "広告を30日間非表示", price: 1500n, category: "広告", recurring: true },
   { slug: "ad-hide-forever", name: "各サイト広告永久非表示", description: "広告を永久に非表示", price: 15000n, category: "広告" },
   // Discord
-  { slug: "discord-booster", name: "Discordサーバーブースト特典", description: "ブースター限定チャンネル解放", price: 3000n, category: "Discord" },
   { slug: "discord-namecolor", name: "Discord名前色変更", description: "名前の色を変更", price: 1000n, category: "Discord", recurring: true },
   { slug: "discord-vip", name: "Discord VIPチャンネル解放", description: "VIP限定チャンネルへのアクセス", price: 5000n, category: "Discord", recurring: true },
   // スポンサー
