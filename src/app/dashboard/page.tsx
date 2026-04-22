@@ -202,15 +202,6 @@ function DashboardContent() {
               コピー
             </button>
           </div>
-          <p className="mt-3 text-xs text-[var(--text-dim)]">広告収益用スクリプト</p>
-          <div className="flex items-center gap-2 mt-1">
-            <code className="break-all text-xs bg-[var(--bg)] rounded px-2 py-1 flex-1 select-all">{`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" data-user-id="${session?.user?.id}" async></script>`}</code>
-            <button
-              onClick={() => navigator.clipboard.writeText(`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" data-user-id="${session?.user?.id}" async></script>`)}
-              className="shrink-0 rounded bg-[var(--border)] px-2 py-1 text-xs hover:bg-[var(--accent)] hover:text-black"
-            >
-              コピー
-            </button>
           </div>
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
