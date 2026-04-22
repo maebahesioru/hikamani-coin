@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { redis } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 
 const AD_REVENUE_SHARE = 0.2; // 20% to site owner
@@ -36,6 +37,11 @@ export async function GET(req: NextRequest) {
   });
 
   const ad = ads.length > 0 ? ads[Math.floor(Math.random() * ads.length)] : null;
+
+  // Record site for ad-hide site selection
+  if (site && site !== "all") {
+    try { await redis.sadd("ad_sites", site); } catch {}
+  }
 
   // Revenue share: pay site owner when ad is shown
   if (ad) {

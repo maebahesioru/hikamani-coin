@@ -27,8 +27,8 @@ function AdHideContent() {
     if (status === "authenticated") {
       fetch("/api/wallet").then(r => r.json()).then(w => setBalance(Number(w.balance)));
     }
-    fetch("/api/sites").then(r => r.json()).then((data: { name: string; url: string }[]) => {
-      setSites(["全サイト", ...data.map(s => s.url)]);
+    fetch("/api/sites").then(r => r.json()).then((data: string[]) => {
+      setSites(["全サイト", ...data]);
     });
   }, [status]);
 
