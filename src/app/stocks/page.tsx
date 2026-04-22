@@ -164,11 +164,33 @@ function StocksContent() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="mb-2 text-2xl font-bold">ヒカマーズ株</h1>
       <p className="mb-2 text-sm text-[var(--text-dim)]">ツイートの勢い・名前変更・アイコン変更で株価が変動＆賭けができる</p>
-      <div className="mb-6 rounded border border-[var(--border)] bg-[var(--card)] p-4 text-xs text-[var(--text-dim)] space-y-1">
-        <p>📈 <b className="text-[var(--text)]">株取引</b>：HKMで株を買い、株価が上がったら売って差益を得る。Yahoo Realtime APIでツイートの勢いを取得し株価が自動変動。</p>
-        <p>🎯 <b className="text-[var(--text)]">賭けマーケット</b>：「〇〇は今週名前を変えるか？」などのYES/NOに賭ける。勝った側が全プールを山分け（Polymarket方式）。</p>
-        <p>📉 <b className="text-[var(--text)]">空売り</b>：株価が下がると予想したら空売り。10,000 HKMでアンロック可能。</p>
-        <p>⚡ <b className="text-[var(--text)]">株価変動トリガー</b>：名前変更(+5%)・アイコン変更(+3%)・凍結(-50%)・復活(+30%)・認証取得(+20%)・鍵垢(-10%)</p>
+      <div className="mb-6 rounded border border-[var(--border)] bg-[var(--card)] p-4 text-xs text-[var(--text-dim)] space-y-3">
+        <div>
+          <p className="font-bold text-[var(--text)] mb-1">📈 株取引</p>
+          <p>HKMで株を買い、株価が上がったら売って差益を得る。手数料1%（手数料割引アイテムで0.5%）。空売りは10,000 HKMでアンロック。</p>
+        </div>
+        <div>
+          <p className="font-bold text-[var(--text)] mb-1">⚡ 株価変動トリガー（5分ごとに自動更新）</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 sm:grid-cols-3">
+            {[
+              ["名前変更", "+8%"],["アイコン変更", "+5%"],["bio変更", "+2%"],
+              ["フォロワー+1%以上", "+30%"],["フォロワー-1%以上", "-30%"],
+              ["認証取得", "+20%"],["認証剥奪", "-15%"],
+              ["凍結", "-50%"],["復活", "+30%"],["鍵垢", "-10%"],
+              ["鍵解除", "+5%"],["URL追加", "+3%"],["ツイート急増", "+10%"],
+            ].map(([k,v]) => (
+              <span key={k} className={`${v.startsWith("+") ? "text-green-400" : "text-red-400"}`}>{v} {k}</span>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="font-bold text-[var(--text)] mb-1">🎯 賭けマーケット（Polymarket方式）</p>
+          <p>YES/NOに賭けてHKMを賭ける。締切後に管理者が結果を確定すると、勝った側が全プールを賭け額比率で山分け。最低10 HKMから参加可能。</p>
+        </div>
+        <div>
+          <p className="font-bold text-[var(--text)] mb-1">📊 データソース</p>
+          <p>Yahoo Realtime API（ツイート数・いいね・RT・フォロワー）＋ FXTwitter API（プロフィール変更検知）を5分ごとに取得。</p>
+        </div>
       </div>
 
       {msg && <p className="mb-4 rounded bg-[var(--card)] border border-[var(--border)] p-3 text-sm">{msg}</p>}
