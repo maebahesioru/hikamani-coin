@@ -28,7 +28,11 @@ export async function GET(req: NextRequest) {
     prisma.betMarket.findMany({
       where,
       include: { stock: true, _count: { select: { bets: true } } },
-      orderBy: { endsAt: "asc" },
+      orderBy: [
+        { yesPool: "desc" },
+        { noPool: "desc" },
+        { createdAt: "desc" },
+      ],
       skip: (page - 1) * limit,
       take: limit,
     }),

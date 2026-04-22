@@ -52,7 +52,14 @@ function StocksContent() {
   const [betPages, setBetPages] = useState(1);
 
   const fetchBets = (p = betPage, q = betSearch) => {
-    fetch(`/api/bets?page=${p}&q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); });
+    fetch(`/api/bets?page=${p}&q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => {
+      const list: BetMarket[] = d.markets ?? d;
+      // 賭けあり→人気順、0vs0→ランダム
+      const active = list.filter(m => Number(m.yesPool) + Number(m.noPool) > 0);
+      const zero = list.filter(m => Number(m.yesPool) + Number(m.noPool) === 0).sort(() => Math.random() - 0.5);
+      setMarkets([...active, ...zero]);
+      setBetPages(d.pages ?? 1);
+    });
   };
   const [priceFlash, setPriceFlash] = useState<Record<string, "up" | "down">>({});
 
