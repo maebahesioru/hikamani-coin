@@ -194,6 +194,9 @@ export default function ApiDocsPage() {
             <li>HKM広告がない場合は何も表示しない（AdSenseと競合しない）</li>
             <li>広告管理: <a href="/ads" className="text-[var(--accent)] hover:underline">/ads</a></li>
           </ul>
+          <h3 className="mb-2 text-sm font-bold">収益を受け取る</h3>
+          <p className="mb-2 text-sm text-[var(--text-dim)]">広告が表示されるたびに1 HKMが付与されます。<a href="/dashboard" className="text-[var(--accent)] hover:underline">ダッシュボード</a>からユーザーID入りのスクリプトタグをコピーして貼り付けてください。</p>
+          <pre className="rounded bg-[var(--bg)] p-3 text-xs overflow-x-auto mb-4">{`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" data-user-id="YOUR_USER_ID" async></script>`}</pre>
           <h3 className="mb-2 text-sm font-bold">カスタマイズ（data属性）</h3>
           <table className="w-full text-xs mb-3">
             <thead><tr className="border-b border-[var(--border)]"><th className="text-left py-1">属性</th><th className="text-left py-1">説明</th><th className="text-left py-1">デフォルト</th></tr></thead>
