@@ -41,20 +41,6 @@ services:
     volumes:
       - redisdata:/data
 
-  cron:
-    image: alpine:3.19
-    depends_on:
-      - app
-    environment:
-      - CRON_SECRET=${CRON_SECRET:-hikamani-cron-secret}
-      - APP_URL=http://app:3000
-    command: >
-      sh -c "
-        echo '*/5 * * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" $$APP_URL/api/cron?type=prices > /proc/1/fd/1 2>&1
-*/15 * * * * wget -qO- --header=\"x-cron-secret: $$CRON_SECRET\" $$APP_URL/api/cron?type=profiles > /proc/1/fd/1 2>&1' | crontab - &&
-        crond -f -l 2
-      "
-
 volumes:
   pgdata:
   redisdata:
