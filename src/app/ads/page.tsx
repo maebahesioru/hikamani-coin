@@ -130,6 +130,7 @@ function AdsContent() {
                 className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm file:mr-2 file:rounded file:border-0 file:bg-[var(--accent)] file:px-2 file:py-1 file:text-xs file:font-semibold file:text-black"
               />
             </div>
+            {imageUrl && <img src={imageUrl} alt="プレビュー" className="mt-2 max-h-32 rounded border border-[var(--border)]" />}
             {imageUrl && <img src={imageUrl} alt="" className="mt-2 max-h-20 rounded" />}
           </div>
           <div>
