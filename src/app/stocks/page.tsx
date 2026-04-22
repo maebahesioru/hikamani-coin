@@ -28,7 +28,6 @@ interface BetMarket {
   outcome: boolean | null;
   yesPool: string;
   noPool: string;
-  totalPool: string;
   yesOdds: number;
   noOdds: number;
   betCount: number;
@@ -48,6 +47,8 @@ function StocksContent() {
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [seeding, setSeeding] = useState(false);
+  const [betPage, setBetPage] = useState(1);
+  const [betPages, setBetPages] = useState(1);
   const [priceFlash, setPriceFlash] = useState<Record<string, "up" | "down">>({});
 
   const fetchStocks = async (q = search, p = page) => {
@@ -75,7 +76,7 @@ function StocksContent() {
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
     fetchStocks();
-    fetch("/api/bets").then((r) => r.json()).then((d) => setMarkets(d.markets ?? d));
+    fetch(`/api/bets?page=${betPage}`).then((r) => r.json()).then((d) => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); });
 
     // SSE for real-time price updates
     const es = new EventSource("/api/stocks/stream");
@@ -134,11 +135,11 @@ function StocksContent() {
     });
     const data = await res.json();
     setMsg(data.message || data.error || "エラー");
-    fetch("/api/bets").then((r) => r.json()).then((d) => setMarkets(d.markets ?? d));
+    fetch(`/api/bets?page=${betPage}`).then((r) => r.json()).then((d) => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); });
   };
 
   const yesPercent = (m: BetMarket) => {
-    const total = Number(m.totalPool);
+    const total = Number(m.yesPool) + Number(m.noPool);
     return total > 0 ? Math.round((Number(m.yesPool) / total) * 100) : 50;
   };
 
@@ -307,7 +308,7 @@ function StocksContent() {
               </div>
 
               <div className="mb-3 flex gap-4 text-xs text-[var(--text-dim)]">
-                <span>プール: {Number(m.totalPool).toLocaleString()} HKM</span>
+                <span>プール: {(Number(m.yesPool) + Number(m.noPool)).toLocaleString()} HKM</span>
                 <span>参加者: {m.betCount}人</span>
                 <span>YESオッズ: x{m.yesOdds.toFixed(2)}</span>
                 <span>NOオッズ: x{m.noOdds.toFixed(2)}</span>
@@ -338,6 +339,15 @@ function StocksContent() {
             </div>
           ))}
           {markets.length === 0 && <p className="text-[var(--text-dim)]">賭けマーケットはまだありません</p>}
+          {betPages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <button disabled={betPage <= 1} onClick={() => { setBetPage(p => p - 1); fetch(`/api/bets?page=${betPage - 1}`).then(r => r.json()).then(d => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); }); }}
+                className="rounded bg-[var(--card)] px-3 py-1 text-sm disabled:opacity-30">← 前</button>
+              <span className="text-sm text-[var(--text-dim)]">{betPage} / {betPages}</span>
+              <button disabled={betPage >= betPages} onClick={() => { setBetPage(p => p + 1); fetch(`/api/bets?page=${betPage + 1}`).then(r => r.json()).then(d => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); }); }}
+                className="rounded bg-[var(--card)] px-3 py-1 text-sm disabled:opacity-30">次 →</button>
+            </div>
+          )}
         </div>
       )}
     </div>
