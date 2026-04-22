@@ -121,7 +121,7 @@ function StocksContent() {
     });
     const data = await res.json();
     setMsg(data.message || data.error || "エラー");
-    fetch("/api/stocks").then((r) => r.json()).then(setStocks);
+    fetch("/api/stocks").then((r) => r.json()).then((d) => setStocks(d.stocks ?? []));
   };
 
   const placeBet = async (marketId: string, side: boolean) => {
