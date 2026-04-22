@@ -17,10 +17,13 @@ export async function POST(req: NextRequest) {
 
   const hkm = BigInt(amount);
   await prisma.$transaction(async (tx) => {
+    const adminWallet = await tx.wallet.findUnique({ where: { userId: user.id } });
+    if (!adminWallet || adminWallet.balance < hkm) throw new Error("管理者残高不足");
     await tx.bonusClaim.update({ where: { id: claimId }, data: { amount: hkm } });
+    await tx.wallet.update({ where: { userId: user.id }, data: { balance: { decrement: hkm } } });
     await tx.wallet.update({ where: { userId: claim.userId }, data: { balance: { increment: hkm } } });
     await tx.transaction.create({
-      data: { type: "BONUS", amount: hkm, receiverId: claim.userId, memo: `申請承認: ${claim.type}` },
+      data: { type: "BONUS", amount: hkm, senderId: user.id, receiverId: claim.userId, memo: `申請承認: ${claim.type}` },
     });
   });
 

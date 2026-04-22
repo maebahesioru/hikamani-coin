@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, badRequest, ok } from "@/lib/api-utils";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 
-// POST: 各種申請（バグ報告・動画投稿・アンケート）
 export async function POST(req: NextRequest) {
+  // 1日3回まで
+  const rl = await rateLimit(req, { limit: 3, window: 86400 });
+  if (!rl.ok) return rateLimitResponse(rl.remaining, rl.reset);
+
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
@@ -13,29 +17,21 @@ export async function POST(req: NextRequest) {
     url?: string;
   };
 
-  if (!content) return badRequest("内容を入力してください");
+  if (!content || content.length > 2000) return badRequest("内容は1〜2000文字で入力してください");
+  // Strip HTML tags
+  const safeContent = content.replace(/<[^>]*>/g, "").trim();
 
-  // Save as a pending bonus claim (amount=0 until admin approves)
   const claim = await prisma.bonusClaim.create({
-    data: {
-      userId: user.id,
-      type,
-      amount: 0n, // pending
-    },
+    data: { userId: user.id, type, amount: 0n },
   });
 
-  // Notify admin via Discord webhook if configured
   const webhookUrl = process.env.DISCORD_ADMIN_WEBHOOK;
   if (webhookUrl) {
     const labels: Record<string, string> = {
-      BUG_REPORT: "🐛 バグ報告",
-      VIDEO_SUBMISSION: "🎬 動画投稿申請",
-      SURVEY: "📋 アンケート回答",
+      BUG_REPORT: "🐛 バグ報告", VIDEO_SUBMISSION: "🎬 動画投稿申請", SURVEY: "📋 アンケート回答",
     };
     const ranges: Record<string, string> = {
-      BUG_REPORT: "500〜3,000 HKM",
-      VIDEO_SUBMISSION: "200〜1,000 HKM",
-      SURVEY: "50〜200 HKM",
+      BUG_REPORT: "500〜3,000 HKM", VIDEO_SUBMISSION: "200〜1,000 HKM", SURVEY: "50〜200 HKM",
     };
     await fetch(webhookUrl, {
       method: "POST",
@@ -43,7 +39,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         embeds: [{
           title: labels[type] || type,
-          description: content,
+          description: safeContent,
           fields: [
             { name: "ユーザーID", value: user.id, inline: true },
             { name: "報酬目安", value: ranges[type] || "未定", inline: true },
