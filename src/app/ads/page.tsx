@@ -19,7 +19,15 @@ interface Ad {
 function AdsContent() {
   const { status } = useSession();
   const [ads, setAds] = useState<Ad[]>([]);
-  const [type, setType] = useState<"ALL_SITES" | "SINGLE_SITE">("ALL_SITES");
+  const [type, setType] = useState<"ALL_SITES" | "SINGLE_SITE" | "POPUP" | "FIXED_BANNER" | "FULLSCREEN">("ALL_SITES");
+
+  const AD_TYPES = [
+    { value: "ALL_SITES",    label: "全サイト インフィード", price: 2000 },
+    { value: "SINGLE_SITE",  label: "1サイト インフィード",  price: 500 },
+    { value: "POPUP",        label: "ポップアップ",          price: 3000 },
+    { value: "FIXED_BANNER", label: "右下固定バナー",        price: 1500 },
+    { value: "FULLSCREEN",   label: "フルスクリーン",        price: 5000 },
+  ] as const;
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -62,15 +70,14 @@ function AdsContent() {
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-semibold">種別</label>
-            <div className="flex gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" value="ALL_SITES" checked={type === "ALL_SITES"} onChange={() => setType("ALL_SITES")} />
-                <span className="text-sm">全サイト表示 (2,000 HKM/24h)</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" value="SINGLE_SITE" checked={type === "SINGLE_SITE"} onChange={() => setType("SINGLE_SITE")} />
-                <span className="text-sm">1サイト表示 (500 HKM/24h)</span>
-              </label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {AD_TYPES.map(t => (
+                <label key={t.value} className={`flex cursor-pointer items-center gap-2 rounded border p-2 text-sm ${type === t.value ? "border-[var(--accent)] bg-[var(--accent)]/10" : "border-[var(--border)]"}`}>
+                  <input type="radio" value={t.value} checked={type === t.value} onChange={() => setType(t.value)} className="hidden" />
+                  <span>{t.label}</span>
+                  <span className="ml-auto text-xs text-[var(--text-dim)]">{t.price.toLocaleString()} HKM</span>
+                </label>
+              ))}
             </div>
           </div>
           <div>
@@ -109,7 +116,7 @@ function AdsContent() {
           </div>
           <button type="submit" disabled={loading || !content}
             className="rounded bg-[var(--accent)] px-6 py-2 text-sm font-semibold text-black disabled:opacity-50">
-            {loading ? "処理中..." : `掲載する (${type === "ALL_SITES" ? "2,000" : "500"} HKM)`}
+            {loading ? "処理中..." : `掲載する (${AD_TYPES.find(t => t.value === type)?.price.toLocaleString()} HKM)`}
           </button>
         </form>
       </div>

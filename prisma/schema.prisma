@@ -269,8 +269,11 @@ model Ad {
 }
 
 enum AdType {
-  ALL_SITES   // 全サイト表示
-  SINGLE_SITE // 1サイト表示
+  ALL_SITES    // 全サイト表示
+  SINGLE_SITE  // 1サイト表示
+  POPUP        // ポップアップ
+  FIXED_BANNER // 右下固定バナー
+  FULLSCREEN   // フルスクリーン（ページ遷移時）
 }
 
 model ApiKey {

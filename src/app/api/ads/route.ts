@@ -23,14 +23,15 @@ export async function POST(req: NextRequest) {
     content: string;
     imageUrl?: string;
     linkUrl?: string;
-    type: "ALL_SITES" | "SINGLE_SITE";
+    type: "ALL_SITES" | "SINGLE_SITE" | "POPUP" | "FIXED_BANNER" | "FULLSCREEN";
   };
 
   if (!content) return badRequest("広告テキストを入力してください");
 
-  // Check purchase
-  const slug = type === "ALL_SITES" ? "ad-all-24h" : "ad-single-24h";
-  const cost = type === "ALL_SITES" ? 2000n : 500n;
+  const PRICES: Record<string, bigint> = {
+    ALL_SITES: 2000n, SINGLE_SITE: 500n, POPUP: 3000n, FIXED_BANNER: 1500n, FULLSCREEN: 5000n,
+  };
+  const cost = PRICES[type] ?? 2000n;
 
   const result = await prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.findUnique({ where: { userId: user.id } });
