@@ -105,6 +105,12 @@ export async function POST(req: NextRequest) {
       if (!wallet || wallet.balance < amount) throw new Error("Insufficient balance");
       await tx.wallet.update({ where: { userId: user.id }, data: { balance: { decrement: amount } } });
     } else {
+      // Grant: deduct from admin wallet (not from thin air)
+      const adminId = process.env.ADMIN_USER_ID;
+      if (!adminId) throw new Error("ADMIN_USER_ID not set");
+      const adminWallet = await tx.wallet.findUnique({ where: { userId: adminId } });
+      if (!adminWallet || adminWallet.balance < amount) throw new Error("管理者残高不足");
+      await tx.wallet.update({ where: { userId: adminId }, data: { balance: { decrement: amount } } });
       await tx.wallet.update({ where: { userId: user.id }, data: { balance: { increment: amount } } });
     }
     await tx.transaction.create({
