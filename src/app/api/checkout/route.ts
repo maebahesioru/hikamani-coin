@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const { itemSlug, callbackUrl } = await req.json() as { itemSlug: string; callbackUrl: string };
 
   const item = await prisma.shopItem.findUnique({ where: { slug: itemSlug } });
-  if (!item || !item.active) return badRequest("アイテムが見つかりません");
+  if (!item) return badRequest("アイテムが見つかりません");
 
   // Validate callback URL (whitelist)
   const allowed = (process.env.CHECKOUT_CALLBACK_WHITELIST || "").split(",").map(s => s.trim()).filter(Boolean);

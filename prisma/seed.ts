@@ -9,6 +9,30 @@ const shopItems = [
   // 広告
   { slug: "ad-hide-30d", name: "各サイト広告30日非表示", description: "広告を30日間非表示", price: 1500n, category: "広告", recurring: true },
   { slug: "ad-hide-forever", name: "各サイト広告永久非表示", description: "広告を永久に非表示", price: 15000n, category: "広告" },
+  // Proプラン
+  { slug: "mani-translate-pro", name: "Mani!?翻訳 Proプラン", description: "翻訳回数無制限", price: 800n, category: "Proプラン", recurring: true },
+  { slug: "saens-kinmaker", name: "SAENSキンメーカー動画出力", description: "1回分", price: 300n, category: "Proプラン" },
+  { slug: "illust-sagashitter-pro", name: "イラストさがしったー Proプラン", description: "高度な検索機能", price: 500n, category: "Proプラン", recurring: true },
+  { slug: "narikitter-pro", name: "なりきったー Proプラン", description: "チャット回数無制限", price: 1000n, category: "Proプラン", recurring: true },
+  { slug: "hikafuwa-box-pro", name: "ヒカフワBOX Proプラン", description: "全機能解放", price: 600n, category: "Proプラン", recurring: true },
+  { slug: "hikamani-ai-pro", name: "ヒカマーAI Proプラン", description: "AI機能フル解放", price: 1500n, category: "Proプラン", recurring: true },
+  { slug: "takuya-voice-pro", name: "拓也さんボイス Proプラン", description: "音声生成無制限", price: 1200n, category: "Proプラン", recurring: true },
+  // Proプラン
+  { slug: "mani-translate-pro", name: "Mani!?翻訳 Proプラン", description: "翻訳回数無制限", price: 800n, category: "Proプラン", recurring: true },
+  { slug: "saens-kinmaker", name: "SAENSキンメーカー動画出力", description: "1回分", price: 300n, category: "Proプラン" },
+  { slug: "illust-sagashitter-pro", name: "イラストさがしったー Proプラン", description: "高度な検索機能", price: 500n, category: "Proプラン", recurring: true },
+  { slug: "narikitter-pro", name: "なりきったー Proプラン", description: "チャット回数無制限", price: 1000n, category: "Proプラン", recurring: true },
+  { slug: "hikafuwa-box-pro", name: "ヒカフワBOX Proプラン", description: "全機能解放", price: 600n, category: "Proプラン", recurring: true },
+  { slug: "hikamani-ai-pro", name: "ヒカマーAI Proプラン", description: "AI機能フル解放", price: 1500n, category: "Proプラン", recurring: true },
+  { slug: "takuya-voice-pro", name: "拓也さんボイス Proプラン", description: "音声生成無制限", price: 1200n, category: "Proプラン", recurring: true },
+  // Proプラン（ショップ非表示・各サイトのcheckoutからのみ購入可）
+  { slug: "mani-translate-pro", name: "Mani!?翻訳 Proプラン", description: "翻訳回数無制限", price: 800n, category: "Proプラン", recurring: true, active: false },
+  { slug: "saens-kinmaker", name: "SAENSキンメーカー動画出力", description: "1回分", price: 300n, category: "Proプラン", active: false },
+  { slug: "illust-sagashitter-pro", name: "イラストさがしったー Proプラン", description: "高度な検索機能", price: 500n, category: "Proプラン", recurring: true, active: false },
+  { slug: "narikitter-pro", name: "なりきったー Proプラン", description: "チャット回数無制限", price: 1000n, category: "Proプラン", recurring: true, active: false },
+  { slug: "hikafuwa-box-pro", name: "ヒカフワBOX Proプラン", description: "全機能解放", price: 600n, category: "Proプラン", recurring: true, active: false },
+  { slug: "hikamani-ai-pro", name: "ヒカマーAI Proプラン", description: "AI機能フル解放", price: 1500n, category: "Proプラン", recurring: true, active: false },
+  { slug: "takuya-voice-pro", name: "拓也さんボイス Proプラン", description: "音声生成無制限", price: 1200n, category: "Proプラン", recurring: true, active: false },
   // Discord
   { slug: "discord-namecolor", name: "Discord名前色変更", description: "名前の色を変更", price: 1000n, category: "Discord", recurring: true },
   { slug: "discord-vip", name: "Discord VIPロール", description: "VIPロールを付与", price: 5000n, category: "Discord", recurring: true },
