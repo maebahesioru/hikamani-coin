@@ -129,7 +129,10 @@ export async function GET(req: NextRequest) {
   }
 
   function fetchAndShow() {
-    var url = AD_SERVER + '/api/ad-serve?site=' + encodeURIComponent(getSiteName()) + '&sessionToken=' + encodeURIComponent(getSession());
+    var userId = script && script.getAttribute('data-user-id') || '';
+    var url = AD_SERVER + '/api/ad-serve?site=' + encodeURIComponent(getSiteName())
+      + '&sessionToken=' + encodeURIComponent(getSession())
+      + (userId ? '&userId=' + encodeURIComponent(userId) : '');
     fetch(url, { credentials: 'omit' }).then(function(r) { return r.json(); }).then(handleAd).catch(function() {});
   }
 

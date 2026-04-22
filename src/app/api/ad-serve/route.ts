@@ -50,27 +50,32 @@ export async function GET(req: NextRequest) {
     try { await redis.sadd("ad_sites", site); } catch {}
   }
 
-  // Revenue share: pay site owner when ad is shown
+  // Revenue share: APIキーまたはdata-user-idで収益分配
   if (ad) {
     const apiKey = req.headers.get("x-api-key") || req.nextUrl.searchParams.get("apiKey");
+    const ownerId = req.nextUrl.searchParams.get("userId");
+    let recipientId: string | null = null;
+
     if (apiKey) {
       const key = await prisma.apiKey.findUnique({ where: { key: apiKey, active: true } });
-      if (key && key.userId !== ad.userId) {
-        // Pay 20% of ad cost to site owner (per impression, capped)
-        const rewardPerImpression = BigInt(Math.floor(1)); // 1 HKM per impression
-        try {
-          await prisma.$transaction(async (tx) => {
-            const adOwnerWallet = await tx.wallet.findUnique({ where: { userId: ad.userId } });
-            if (adOwnerWallet && adOwnerWallet.balance >= rewardPerImpression) {
-              await tx.wallet.update({ where: { userId: ad.userId }, data: { balance: { decrement: rewardPerImpression } } });
-              await tx.wallet.update({ where: { userId: key.userId }, data: { balance: { increment: rewardPerImpression } } });
-              await tx.transaction.create({
-                data: { type: "BONUS", amount: rewardPerImpression, senderId: ad.userId, receiverId: key.userId, memo: `広告収益: ${site}` },
-              });
-            }
-          });
-        } catch { /* ignore */ }
-      }
+      if (key) recipientId = key.userId;
+    } else if (ownerId) {
+      recipientId = ownerId;
+    }
+
+    if (recipientId && recipientId !== ad.userId) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          const adOwnerWallet = await tx.wallet.findUnique({ where: { userId: ad.userId } });
+          if (adOwnerWallet && adOwnerWallet.balance >= 1n) {
+            await tx.wallet.update({ where: { userId: ad.userId }, data: { balance: { decrement: 1n } } });
+            await tx.wallet.update({ where: { userId: recipientId! }, data: { balance: { increment: 1n } } });
+            await tx.transaction.create({
+              data: { type: "BONUS", amount: 1n, senderId: ad.userId, receiverId: recipientId!, memo: `広告収益: ${site}` },
+            });
+          }
+        });
+      } catch { /* ignore */ }
     }
   }
 
