@@ -125,7 +125,7 @@ export default function ApiDocsPage() {
           <p className="mb-3 text-sm text-[var(--text-dim)]">APIキーが必要なエンドポイントは <code className="rounded bg-[var(--border)] px-1">x-api-key</code> ヘッダーにAPIキーを付与してください。</p>
           <pre className="rounded bg-[var(--bg)] p-3 text-xs overflow-x-auto">{`curl -H "x-api-key: YOUR_API_KEY" \\
   "${BASE}/api/external?discordId=123456789"`}</pre>
-          <p className="mt-3 text-sm text-[var(--text-dim)]">APIキーは <a href="/dashboard" className="text-[var(--accent)] hover:underline">ダッシュボード</a> から発行できます（準備中）。</p>
+          <p className="mt-3 text-sm text-[var(--text-dim)]">APIキーは <a href="/dashboard" className="text-[var(--accent)] hover:underline">ダッシュボード</a> から発行できます。</p>
         </section>
 
         {/* Endpoints */}

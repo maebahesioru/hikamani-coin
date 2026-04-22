@@ -5,6 +5,65 @@ import { SessionProvider } from "@/components/session-provider";
 import { Navbar } from "@/components/navbar";
 import { redirect } from "next/navigation";
 
+function ApiKeySection() {
+  const [keys, setKeys] = useState<{ id: string; name: string; key: string; active: boolean; lastUsedAt: string | null }[]>([]);
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [revealed, setRevealed] = useState<string | null>(null);
+
+  useEffect(() => { fetch("/api/apikeys").then(r => r.json()).then(setKeys); }, []);
+
+  const create = async () => {
+    if (!name) return;
+    setLoading(true);
+    const res = await fetch("/api/apikeys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+    const data = await res.json();
+    if (res.ok) { setKeys(k => [data, ...k]); setName(""); setRevealed(data.key); }
+    setLoading(false);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("削除しますか？")) return;
+    await fetch("/api/apikeys", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    setKeys(k => k.filter(x => x.id !== id));
+  };
+
+  return (
+    <div className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+      <h2 className="mb-1 text-lg font-bold">APIキー</h2>
+      <p className="mb-4 text-xs text-[var(--text-dim)]">外部サービスからHKMを操作するためのAPIキー（最大5件）</p>
+      <div className="mb-4 flex gap-2">
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="キー名（例: TwiGacha）"
+          className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+        <button onClick={create} disabled={loading || !name}
+          className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50">発行</button>
+      </div>
+      {revealed && (
+        <div className="mb-4 rounded border border-yellow-400/30 bg-yellow-400/5 p-3">
+          <p className="text-xs text-yellow-400 mb-1">⚠️ このキーは一度しか表示されません。今すぐコピーしてください。</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 break-all text-xs">{revealed}</code>
+            <button onClick={() => { navigator.clipboard.writeText(revealed); setRevealed(null); }}
+              className="shrink-0 rounded bg-yellow-400 px-2 py-1 text-xs font-bold text-black">コピーして閉じる</button>
+          </div>
+        </div>
+      )}
+      <div className="space-y-2">
+        {keys.filter(k => k.active).map(k => (
+          <div key={k.id} className="flex items-center justify-between rounded border border-[var(--border)] px-3 py-2">
+            <div>
+              <p className="text-sm font-semibold">{k.name}</p>
+              <p className="text-xs text-[var(--text-dim)]">hkm_••••••••{k.key.slice(-8)} · 最終使用: {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString("ja-JP") : "未使用"}</p>
+            </div>
+            <button onClick={() => remove(k.id)} className="text-xs text-red-400 hover:text-red-300">削除</button>
+          </div>
+        ))}
+        {keys.filter(k => k.active).length === 0 && <p className="text-xs text-[var(--text-dim)]">APIキーはまだありません</p>}
+      </div>
+    </div>
+  );
+}
+
 interface UserData {
   balance: string;
   streak: number;
@@ -328,6 +387,9 @@ function DashboardContent() {
           {txs.length === 0 && <p className="text-[var(--text-dim)]">取引履歴はありません</p>}
         </div>
       </div>
+
+      {/* API Keys */}
+      <ApiKeySection />
     </div>
   );
 }
