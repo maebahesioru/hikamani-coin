@@ -23,9 +23,6 @@ export async function POST(req: NextRequest) {
   const { name, allowedOrigins } = await req.json() as { name: string; allowedOrigins?: string[] };
   if (!name) return badRequest("名前が必要です");
 
-  const count = await prisma.apiKey.count({ where: { userId: user.id, active: true } });
-  if (count >= 5) return badRequest("APIキーは最大5件まで発行できます");
-
   const key = `hkm_${randomBytes(24).toString("hex")}`;
   const apiKey = await prisma.apiKey.create({
     data: { userId: user.id, name, key, allowedOrigins: allowedOrigins || [] },

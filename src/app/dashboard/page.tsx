@@ -31,7 +31,7 @@ function ApiKeySection() {
   return (
     <div className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
       <h2 className="mb-1 text-lg font-bold">APIキー</h2>
-      <p className="mb-4 text-xs text-[var(--text-dim)]">外部サービスからHKMを操作するためのAPIキー（最大5件）</p>
+      <p className="mb-4 text-xs text-[var(--text-dim)]">外部サービスからHKMを操作するためのAPIキー</p>
       <div className="mb-4 flex gap-2">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="キー名（例: TwiGacha）"
           className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
