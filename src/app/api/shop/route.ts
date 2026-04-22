@@ -74,6 +74,8 @@ export async function POST(req: NextRequest) {
         include: { linkedAccounts: true },
       });
       const discordId = dbUser?.linkedAccounts.find(a => a.provider === "DISCORD")?.providerId;
+      const twitterId = dbUser?.linkedAccounts.find(a => a.provider === "TWITTER")?.providerId;
+      const googleId = dbUser?.linkedAccounts.find(a => a.provider === "GOOGLE")?.providerId;
       await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -86,7 +88,11 @@ export async function POST(req: NextRequest) {
               { name: "価格", value: `${item.price.toString()} HKM`, inline: true },
               { name: "ユーザー", value: dbUser?.displayName || dbUser?.username || user.id, inline: true },
               { name: "ユーザーID", value: user.id, inline: true },
+              ...(dbUser?.email ? [{ name: "メール", value: dbUser.email, inline: true }] : []),
               ...(discordId ? [{ name: "Discord", value: `<@${discordId}>`, inline: true }] : []),
+              ...(twitterId ? [{ name: "Twitter ID", value: twitterId, inline: true }] : []),
+              ...(googleId ? [{ name: "Google ID", value: googleId, inline: true }] : []),
+              { name: "連携済み", value: dbUser?.linkedAccounts.map(a => a.provider).join(", ") || "なし", inline: true },
               { name: "購入ID", value: result.id, inline: false },
             ],
           }],
