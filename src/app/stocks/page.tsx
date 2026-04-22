@@ -54,11 +54,11 @@ function StocksContent() {
     const res = await fetch(`/api/stocks?q=${encodeURIComponent(q)}&page=${p}`);
     if (res.ok) {
       const data = await res.json();
-      setStocks(data.stocks);
-      setPages(data.pages);
-      setTotal(data.total);
+      setStocks(data.stocks ?? []);
+      setPages(data.pages ?? 1);
+      setTotal(data.total ?? 0);
       // Auto-cache profiles for displayed stocks
-      const uncached = data.stocks.filter((s: Stock) => !s.profile).map((s: Stock) => s.name);
+      const uncached = (data.stocks ?? []).filter((s: Stock) => !s.profile).map((s: Stock) => s.name);
       if (uncached.length > 0 && !caching.current) {
         caching.current = true;
         fetch("/api/stocks/cache-profiles", {
