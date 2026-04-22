@@ -8,7 +8,9 @@ export async function GET(req: NextRequest) {
   'use strict';
   var AD_SERVER = '${AD_SERVER}';
   var STORAGE_KEY = 'hkm_session';
-  var AD_INTERVAL_MS = 30000;
+  var script = document.currentScript || document.querySelector('script[src*="ad.js"]');
+  var MAX_ADS = parseInt(script && script.getAttribute('data-max') || '1', 10);
+  var ALLOWED_TYPES = (script && script.getAttribute('data-types') || 'infeed,popup,fixed,fullscreen').split(',').map(function(s){return s.trim();});
   var shownFullscreen = false;
 
   function getSession() {
@@ -17,17 +19,16 @@ export async function GET(req: NextRequest) {
   function getSiteName() { return location.hostname.replace(/^www\\./, ''); }
 
   // --- インフィード ---
-  function injectInfeed(ad) {
+  function injectInfeed(ad, max) {
     document.querySelectorAll('.hkm-ad-infeed').forEach(function(el) { el.remove(); });
-    var div = makeBase('hkm-ad-infeed', ad);
     var targets = Array.from(document.querySelectorAll('article, main, .content, #content, body'));
-    var inserted = false;
-    for (var i = 0; i < targets.length; i++) {
+    var inserted = 0;
+    for (var i = 0; i < targets.length && inserted < max; i++) {
       var children = Array.from(targets[i].children);
       var after = children.find(function(c) { return ['P','H1','H2','H3','DIV','SECTION'].includes(c.tagName) && !c.classList.contains('hkm-ad-infeed'); });
-      if (after) { after.parentNode.insertBefore(div, after.nextSibling); inserted = true; break; }
+      if (after) { after.parentNode.insertBefore(makeBase('hkm-ad-infeed', ad), after.nextSibling); inserted++; }
     }
-    if (!inserted) document.body.appendChild(div);
+    if (inserted === 0) document.body.appendChild(makeBase('hkm-ad-infeed', ad));
   }
 
   // --- ポップアップ ---
@@ -121,10 +122,10 @@ export async function GET(req: NextRequest) {
   function handleAd(data) {
     if (!data.show || !data.ad) return;
     var t = data.ad.type;
-    if (t === 'ALL_SITES' || t === 'SINGLE_SITE') injectInfeed(data.ad);
-    else if (t === 'POPUP') showPopup(data.ad);
-    else if (t === 'FIXED_BANNER') showFixedBanner(data.ad);
-    else if (t === 'FULLSCREEN') showFullscreen(data.ad);
+    if ((t === 'ALL_SITES' || t === 'SINGLE_SITE') && ALLOWED_TYPES.indexOf('infeed') !== -1) injectInfeed(data.ad, MAX_ADS);
+    else if (t === 'POPUP' && ALLOWED_TYPES.indexOf('popup') !== -1) showPopup(data.ad);
+    else if (t === 'FIXED_BANNER' && ALLOWED_TYPES.indexOf('fixed') !== -1) showFixedBanner(data.ad);
+    else if (t === 'FULLSCREEN' && ALLOWED_TYPES.indexOf('fullscreen') !== -1) showFullscreen(data.ad);
   }
 
   function fetchAndShow() {
