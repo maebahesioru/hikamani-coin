@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { redis } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
@@ -86,6 +87,17 @@ export async function POST(req: NextRequest) {
 
   const amount = BigInt(amountStr || "0");
   if (amount <= 0n) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+  if (amount > 10000n) return NextResponse.json({ error: "1回の付与上限は10,000 HKMです" }, { status: 400 });
+
+  // Daily grant limit per API key: 100,000 HKM
+  if (action === "grant") {
+    const dayKey = `grant_daily:${apiKey.id}:${new Date().toISOString().slice(0, 10)}`;
+    const todayTotal = parseInt(await redis.get(dayKey) || "0");
+    if (todayTotal + Number(amount) > 100000) {
+      return NextResponse.json({ error: "1日の付与上限(100,000 HKM)を超えています" }, { status: 429 });
+    }
+    await redis.setex(dayKey, 86400, String(todayTotal + Number(amount)));
+  }
 
   await prisma.$transaction(async (tx) => {
     if (action === "deduct") {
