@@ -1,22 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
 import { ThemeToggle } from "./theme-toggle";
 
 export function Navbar() {
   const { data: session, status } = useSession();
-  const [validSession, setValidSession] = useState(false);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetch("/api/auth/session").then(r => r.json()).then(s => {
-        setValidSession(!!s?.user);
-      }).catch(() => setValidSession(false));
-    } else {
-      setValidSession(false);
-    }
-  }, [status]);
 
   return (
     <nav className="border-b border-[var(--border)] bg-[var(--card)]">
@@ -26,7 +14,7 @@ export function Navbar() {
         </Link>
         <div className="flex items-center gap-4 text-sm">
           <ThemeToggle />
-          {validSession && session ? (
+          {status === "loading" ? null : status === "authenticated" && session ? (
             <>
               <Link href="/dashboard" className="hover:text-[var(--accent)]">ダッシュボード</Link>
               <Link href="/shop" className="hover:text-[var(--accent)]">ショップ</Link>
