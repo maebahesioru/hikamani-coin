@@ -79,6 +79,8 @@ function ShopContent() {
                         window.location.href = `/checkout/sponsor?item=${item.slug}`;
                       } else if (["ad-all-24h","ad-single-24h"].includes(item.slug)) {
                         window.location.href = "/ads";
+                      } else if (["ad-hide-30d","ad-hide-forever"].includes(item.slug)) {
+                        window.location.href = `/checkout/ad-hide?item=${item.slug}`;
                       } else {
                         setConfirm({ slug: item.slug, name: item.name, price: item.price });
                       }
