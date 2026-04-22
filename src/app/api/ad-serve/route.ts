@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
+import { verifyUserToken } from "@/lib/user-token";
 import { NextRequest, NextResponse } from "next/server";
 
 const AD_REVENUE_SHARE = 0.2; // 20% to site owner
@@ -13,15 +14,17 @@ export async function GET(req: NextRequest) {
   // Check if user has ad-hide purchase
   let hideAds = false;
   if (sessionToken) {
-    // sessionToken is userId stored in localStorage
-    const purchases = await prisma.purchase.findMany({
-      where: {
-        userId: sessionToken,
-        item: { slug: { in: ["ad-hide-30d", "ad-hide-forever"] } },
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      },
-    });
-    hideAds = purchases.length > 0;
+    const userId = verifyUserToken(sessionToken);
+    if (userId) {
+      const purchases = await prisma.purchase.findMany({
+        where: {
+          userId,
+          item: { slug: { in: ["ad-hide-30d", "ad-hide-forever"] } },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+      });
+      hideAds = purchases.length > 0;
+    }
   }
 
   if (hideAds) {
@@ -61,7 +64,9 @@ export async function GET(req: NextRequest) {
       const key = await prisma.apiKey.findUnique({ where: { key: apiKey, active: true } });
       if (key) recipientId = key.userId;
     } else if (ownerId) {
-      recipientId = ownerId;
+      // Verify userId exists in DB to prevent spoofing
+      const exists = await prisma.wallet.findUnique({ where: { userId: ownerId }, select: { userId: true } });
+      if (exists) recipientId = ownerId;
     }
 
     if (recipientId && recipientId !== ad.userId) {

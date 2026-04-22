@@ -14,8 +14,14 @@ export async function POST(req: NextRequest) {
   const hkm = BigInt(amount);
   await prisma.$transaction(async (tx) => {
     if (hkm > 0n) {
-      await tx.wallet.update({ where: { userId: targetId }, data: { balance: { increment: hkm } } });
+      await tx.wallet.upsert({
+        where: { userId: targetId },
+        update: { balance: { increment: hkm } },
+        create: { userId: targetId, balance: hkm },
+      });
     } else {
+      const w = await tx.wallet.findUnique({ where: { userId: targetId } });
+      if (!w) throw new Error("ウォレットが見つかりません");
       await tx.wallet.update({ where: { userId: targetId }, data: { balance: { decrement: -hkm } } });
     }
     await tx.transaction.create({

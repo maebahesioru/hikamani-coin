@@ -145,11 +145,9 @@ function DashboardContent() {
     }
     if (status === "authenticated") {
       fetchData();
-      // Save session token for ad.js cross-site use
-      fetch("/api/auth/session").then(r => r.json()).then(s => {
-        if (s?.user?.id) {
-          localStorage.setItem("hkm_session", s.user.id);
-        }
+      // Save signed token for ad.js cross-site use
+      fetch("/api/me/token").then(r => r.json()).then(d => {
+        if (d.token) localStorage.setItem("hkm_session", d.token);
       });
     }
   }, [status, fetchData]);
