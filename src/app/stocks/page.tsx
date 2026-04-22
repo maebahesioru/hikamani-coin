@@ -1,6 +1,6 @@
 "use client";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { SessionProvider } from "@/components/session-provider";
 import { Navbar } from "@/components/navbar";
 import { redirect } from "next/navigation";
@@ -38,6 +38,7 @@ function StocksContent() {
   const { status } = useSession();
   const [tab, setTab] = useState<"stocks" | "bets">("stocks");
   const [stocks, setStocks] = useState<Stock[]>([]);
+  const caching = useRef(false);
   const [markets, setMarkets] = useState<BetMarket[]>([]);
   const [qty, setQty] = useState<Record<string, string>>({});
   const [betAmounts, setBetAmounts] = useState<Record<string, string>>({});
@@ -58,15 +59,15 @@ function StocksContent() {
       setTotal(data.total);
       // Auto-cache profiles for displayed stocks
       const uncached = data.stocks.filter((s: Stock) => !s.profile).map((s: Stock) => s.name);
-      if (uncached.length > 0) {
+      if (uncached.length > 0 && !caching.current) {
+        caching.current = true;
         fetch("/api/stocks/cache-profiles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ handles: uncached }),
         }).then(r => r.json()).then(() => {
-          // Refresh after caching
-          setTimeout(() => fetchStocks(q, p), 3000);
-        }).catch(() => {});
+          setTimeout(() => { caching.current = false; fetchStocks(q, p); }, 3000);
+        }).catch(() => { caching.current = false; });
       }
     }
   };
