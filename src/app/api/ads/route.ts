@@ -19,13 +19,14 @@ export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
-  const { content, imageUrl, linkUrl, type, targetSite, days: daysRaw } = await req.json() as {
+  const { content, imageUrl, linkUrl, type, targetSite, days: daysRaw, startsAt: startsAtRaw } = await req.json() as {
     content: string; imageUrl?: string; linkUrl?: string;
-    type: string; targetSite?: string; days?: number;
+    type: string; targetSite?: string; days?: number; startsAt?: string;
   };
 
   if (!content) return badRequest("広告テキストを入力してください");
   const days = Math.max(1, Math.min(30, daysRaw || 1));
+  const startsAt = startsAtRaw ? new Date(startsAtRaw) : new Date();
 
   const PRICES: Record<string, bigint> = {
     ALL_SITES: 2000n, SINGLE_SITE: 500n,
@@ -44,9 +45,9 @@ export async function POST(req: NextRequest) {
       data: { type: "PURCHASE", amount: cost, senderId: user.id, memo: `広告掲載: ${type}` },
     });
 
-    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000);
     return tx.ad.create({
-      data: { userId: user.id, type: type as never, content, imageUrl, linkUrl, targetSite, expiresAt },
+      data: { userId: user.id, type: type as never, content, imageUrl, linkUrl, targetSite, startsAt, expiresAt },
     });
   });
 

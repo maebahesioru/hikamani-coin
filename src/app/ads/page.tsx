@@ -40,6 +40,7 @@ function AdsContent() {
   const [imageUrl, setImageUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [days, setDays] = useState(1);
+  const [startDate, setStartDate] = useState("");
   const [loading, setLoading] = useState(false);
 
   const basePrice = AD_TYPES.find(t => t.value === type)?.price ?? 2000;
@@ -57,7 +58,7 @@ function AdsContent() {
     const res = await fetch("/api/ads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, content, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined, targetSite: isSingle ? targetSite : undefined, days }),
+      body: JSON.stringify({ type, content, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined, targetSite: isSingle ? targetSite : undefined, days, startsAt: startDate || undefined }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -139,12 +140,23 @@ function AdsContent() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-semibold">掲載期間</label>
-            <div className="flex items-center gap-2">
-              <input type="number" min={1} max={30} value={days} onChange={e => setDays(Math.max(1, Math.min(30, parseInt(e.target.value) || 1)))}
-                className="w-20 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
-              <span className="text-sm text-[var(--text-dim)]">日間（最大30日）</span>
-              <span className="ml-auto text-sm font-bold text-[var(--accent)]">合計: {totalPrice.toLocaleString()} HKM</span>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs text-[var(--text-dim)] mb-1">開始日時（空欄=即時）</p>
+                <input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)}
+                  min={new Date().toISOString().slice(0,16)}
+                  className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-dim)] mb-1">日数</p>
+                <input type="number" min={1} max={30} value={days} onChange={e => setDays(Math.max(1, Math.min(30, parseInt(e.target.value) || 1)))}
+                  className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+              </div>
             </div>
+            <p className="mt-1 text-xs text-[var(--text-dim)]">
+              {startDate ? `${new Date(startDate).toLocaleString("ja-JP")} から ` : "即時から "}
+              {days}日間 → 合計 <span className="font-bold text-[var(--accent)]">{totalPrice.toLocaleString()} HKM</span>
+            </p>
           </div>
           <button type="submit" disabled={loading || !content}
             className="rounded bg-[var(--accent)] px-6 py-2 text-sm font-semibold text-black disabled:opacity-50">

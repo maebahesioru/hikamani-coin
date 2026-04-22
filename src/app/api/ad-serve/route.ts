@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
   const ads = await prisma.ad.findMany({
     where: {
       active: true,
+      startsAt: { lte: now },
       expiresAt: { gt: now },
       OR: [
         { targetSite: null },
