@@ -196,8 +196,7 @@ export default function ApiDocsPage() {
             <li>広告管理: <a href="/ads" className="text-[var(--accent)] hover:underline">/ads</a></li>
           </ul>
           <h3 className="mb-2 text-sm font-bold">収益を受け取る</h3>
-          <p className="mb-2 text-sm text-[var(--text-dim)]">広告が表示されるたびに1 HKMが付与されます。ログイン済みの場合、下のタグにユーザーIDが自動で入ります。</p>
-          <div className="mb-4"><AdScriptTag /></div>
+          <p className="mb-4 text-sm text-[var(--text-dim)]">広告が表示されるたびに1 HKMが付与されます。上のタグにユーザーIDが自動で入っています。</p>
           <h3 className="mb-2 text-sm font-bold">カスタマイズ（data属性）</h3>
           <table className="w-full text-xs mb-3">
             <thead><tr className="border-b border-[var(--border)]"><th className="text-left py-1">属性</th><th className="text-left py-1">説明</th><th className="text-left py-1">デフォルト</th></tr></thead>
