@@ -64,5 +64,36 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // 特別アイテム購入時にDiscord Webhook通知
+  const SPECIAL_SLUGS = ["naming-rights", "twitter-repost", "face-voice", "twitter-followback"];
+  if (SPECIAL_SLUGS.includes(itemSlug)) {
+    const webhookUrl = process.env.DISCORD_ADMIN_WEBHOOK;
+    if (webhookUrl) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { linkedAccounts: true },
+      });
+      const discordId = dbUser?.linkedAccounts.find(a => a.provider === "DISCORD")?.providerId;
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          embeds: [{
+            title: `🛒 特別アイテム購入`,
+            color: 0xF59E0B,
+            fields: [
+              { name: "アイテム", value: item.name, inline: true },
+              { name: "価格", value: `${item.price.toString()} HKM`, inline: true },
+              { name: "ユーザー", value: dbUser?.displayName || dbUser?.username || user.id, inline: true },
+              { name: "ユーザーID", value: user.id, inline: true },
+              ...(discordId ? [{ name: "Discord", value: `<@${discordId}>`, inline: true }] : []),
+              { name: "購入ID", value: result.id, inline: false },
+            ],
+          }],
+        }),
+      }).catch(() => {});
+    }
+  }
+
   return ok({ purchaseId: result.id, twigachaCards });
 }
