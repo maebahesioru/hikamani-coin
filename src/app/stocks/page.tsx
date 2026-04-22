@@ -48,6 +48,8 @@ function StocksContent() {
   const [total, setTotal] = useState(0);
   const [seeding, setSeeding] = useState(false);
   const [betSearch, setBetSearch] = useState("");
+  const [betPage, setBetPage] = useState(1);
+  const [betPages, setBetPages] = useState(1);
 
   const fetchBets = (p = betPage, q = betSearch) => {
     fetch(`/api/bets?page=${p}&q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); });
