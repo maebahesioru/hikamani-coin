@@ -113,11 +113,12 @@ function AdsContent() {
           <div>
             <label className="mb-1 block text-sm font-semibold">画像・GIF（任意・2MB以下）</label>
             <input
+              key={imageUrl || "empty"}
               type="file"
               accept="image/*"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
-                if (!file) return;
+                if (!file) return; // キャンセル時は何もしない
                 // ローカルプレビュー即時表示
                 setImageUrl(URL.createObjectURL(file));
                 const fd = new FormData();
