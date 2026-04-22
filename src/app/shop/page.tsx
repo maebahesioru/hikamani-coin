@@ -77,6 +77,8 @@ function ShopContent() {
                     onClick={() => {
                       if (["sponsor-30d","sponsor-forever","sponsor-big-forever"].includes(item.slug)) {
                         window.location.href = `/checkout/sponsor?item=${item.slug}`;
+                      } else if (["ad-all-24h","ad-single-24h"].includes(item.slug)) {
+                        window.location.href = "/ads";
                       } else {
                         setConfirm({ slug: item.slug, name: item.name, price: item.price });
                       }
