@@ -74,7 +74,7 @@ function StocksContent() {
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
     fetchStocks();
-    fetch("/api/bets").then((r) => r.json()).then(setMarkets);
+    fetch("/api/bets").then((r) => r.json()).then((d) => setMarkets(d.markets ?? d));
 
     // SSE for real-time price updates
     const es = new EventSource("/api/stocks/stream");
@@ -133,7 +133,7 @@ function StocksContent() {
     });
     const data = await res.json();
     setMsg(data.message || data.error || "エラー");
-    fetch("/api/bets").then((r) => r.json()).then(setMarkets);
+    fetch("/api/bets").then((r) => r.json()).then((d) => setMarkets(d.markets ?? d));
   };
 
   const yesPercent = (m: BetMarket) => {

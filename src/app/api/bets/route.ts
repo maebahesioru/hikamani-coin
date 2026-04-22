@@ -15,44 +15,60 @@ const CATEGORY_LABEL: Record<string, string> = {
 // GET: マーケット一覧
 export async function GET(req: NextRequest) {
   const active = req.nextUrl.searchParams.get("active") !== "false";
-  const markets = await prisma.betMarket.findMany({
-    where: active ? { resolved: false, endsAt: { gt: new Date() } } : {},
-    include: { stock: true, _count: { select: { bets: true } } },
-    orderBy: { endsAt: "asc" },
-  });
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") || "1"));
+  const limit = 20;
+  const q = req.nextUrl.searchParams.get("q") || "";
 
-  // Fetch cached profiles
-  const profiles = await Promise.all(markets.map(async (m) => {
-    if (!m.stock) return null;
+  const where = {
+    ...(active ? { resolved: false, endsAt: { gt: new Date() } } : {}),
+    ...(q ? { stock: { name: { contains: q, mode: "insensitive" as const } } } : {}),
+  };
+
+  const [markets, total] = await Promise.all([
+    prisma.betMarket.findMany({
+      where,
+      include: { stock: true, _count: { select: { bets: true } } },
+      orderBy: { endsAt: "asc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.betMarket.count({ where }),
+  ]);
+
+  // Fetch cached profiles in parallel
+  const profileMap = new Map<string, Record<string, unknown>>();
+  const handles = [...new Set(markets.map(m => m.stock?.name).filter(Boolean) as string[])];
+  await Promise.all(handles.map(async (h) => {
     try {
-      const cached = await redis.get(`profile:${m.stock.name}`);
-      if (cached) {
-        const p = JSON.parse(cached);
-        return { name: p.name, avatarUrl: p.avatarUrl, followers: p.followers, verified: p.verified, description: p.description };
-      }
+      const cached = await redis.get(`profile:${h}`);
+      if (cached) profileMap.set(h, JSON.parse(cached));
     } catch {}
-    return null;
   }));
 
-  return ok(markets.map((m, i) => ({
-    id: m.id,
-    question: m.question,
-    description: m.description,
-    category: m.category,
-    categoryLabel: CATEGORY_LABEL[m.category] || m.category,
-    stockName: m.stock?.name,
-    stockPrice: m.stock?.currentPrice.toString(),
-    profile: profiles[i],
-    endsAt: m.endsAt,
-    resolved: m.resolved,
-    outcome: m.outcome,
-    yesPool: m.yesPool.toString(),
-    noPool: m.noPool.toString(),
-    totalPool: (m.yesPool + m.noPool).toString(),
-    yesOdds: m.yesPool + m.noPool > 0n ? Number(m.noPool) / Number(m.yesPool + m.noPool) + 1 : 2,
-    noOdds: m.yesPool + m.noPool > 0n ? Number(m.yesPool) / Number(m.yesPool + m.noPool) + 1 : 2,
-    betCount: m._count.bets,
-  })));
+  return ok({
+    markets: markets.map((m) => {
+      const p = m.stock ? profileMap.get(m.stock.name) : null;
+      return {
+        id: m.id,
+        question: m.question,
+        category: m.category,
+        categoryLabel: CATEGORY_LABEL[m.category] || m.category,
+        stockName: m.stock?.name,
+        stockPrice: m.stock?.currentPrice.toString(),
+        profile: p ? { name: p.name, avatarUrl: p.avatarUrl, followers: p.followers, verified: p.verified } : null,
+        endsAt: m.endsAt,
+        resolved: m.resolved,
+        outcome: m.outcome,
+        yesPool: m.yesPool.toString(),
+        noPool: m.noPool.toString(),
+        yesOdds: m.yesPool + m.noPool > 0n ? Number(m.noPool) / Number(m.yesPool + m.noPool) + 1 : 2,
+        noOdds: m.yesPool + m.noPool > 0n ? Number(m.yesPool) / Number(m.yesPool + m.noPool) + 1 : 2,
+        betCount: m._count.bets,
+      };
+    }),
+    total,
+    pages: Math.ceil(total / limit),
+  });
 }
 
 // POST: 賭ける
