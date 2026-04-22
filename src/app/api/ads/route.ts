@@ -19,12 +19,13 @@ export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
-  const { content, imageUrl, linkUrl, type, targetSite } = await req.json() as {
+  const { content, imageUrl, linkUrl, type, targetSite, days: daysRaw } = await req.json() as {
     content: string; imageUrl?: string; linkUrl?: string;
-    type: string; targetSite?: string;
+    type: string; targetSite?: string; days?: number;
   };
 
   if (!content) return badRequest("広告テキストを入力してください");
+  const days = Math.max(1, Math.min(30, daysRaw || 1));
 
   const PRICES: Record<string, bigint> = {
     ALL_SITES: 2000n, SINGLE_SITE: 500n,
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     FIXED_BANNER: 1500n, FIXED_BANNER_SINGLE: 400n,
     FULLSCREEN: 5000n, FULLSCREEN_SINGLE: 1500n,
   };
-  const cost = PRICES[type] ?? 2000n;
+  const cost = (PRICES[type] ?? 2000n) * BigInt(days);
 
   const result = await prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.findUnique({ where: { userId: user.id } });
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
       data: { type: "PURCHASE", amount: cost, senderId: user.id, memo: `広告掲載: ${type}` },
     });
 
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     return tx.ad.create({
       data: { userId: user.id, type: type as never, content, imageUrl, linkUrl, targetSite, expiresAt },
     });

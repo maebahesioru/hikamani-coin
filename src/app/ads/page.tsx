@@ -39,7 +39,11 @@ function AdsContent() {
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
+  const [days, setDays] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  const basePrice = AD_TYPES.find(t => t.value === type)?.price ?? 2000;
+  const totalPrice = basePrice * days;
 
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
@@ -53,7 +57,7 @@ function AdsContent() {
     const res = await fetch("/api/ads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, content, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined, targetSite: isSingle ? targetSite : undefined }),
+      body: JSON.stringify({ type, content, imageUrl: imageUrl || undefined, linkUrl: linkUrl || undefined, targetSite: isSingle ? targetSite : undefined, days }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -133,9 +137,18 @@ function AdsContent() {
               placeholder="https://..."
               className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
           </div>
+          <div>
+            <label className="mb-1 block text-sm font-semibold">掲載期間</label>
+            <div className="flex items-center gap-2">
+              <input type="number" min={1} max={30} value={days} onChange={e => setDays(Math.max(1, Math.min(30, parseInt(e.target.value) || 1)))}
+                className="w-20 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+              <span className="text-sm text-[var(--text-dim)]">日間（最大30日）</span>
+              <span className="ml-auto text-sm font-bold text-[var(--accent)]">合計: {totalPrice.toLocaleString()} HKM</span>
+            </div>
+          </div>
           <button type="submit" disabled={loading || !content}
             className="rounded bg-[var(--accent)] px-6 py-2 text-sm font-semibold text-black disabled:opacity-50">
-            {loading ? "処理中..." : `掲載する (${AD_TYPES.find(t => t.value === type)?.price.toLocaleString()} HKM)`}
+            {loading ? "処理中..." : `掲載する (${totalPrice.toLocaleString()} HKM)`}
           </button>
         </form>
       </div>
