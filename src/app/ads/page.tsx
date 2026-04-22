@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { SessionProvider } from "@/components/session-provider";
 import { Navbar } from "@/components/navbar";
+import { AdScriptTag } from "@/app/api-docs/ad-script-tag";
 import { showToast } from "@/components/toaster";
 import { redirect } from "next/navigation";
 
@@ -168,14 +169,12 @@ function AdsContent() {
         <p className="text-sm text-[var(--text-dim)] mb-3">
           自分のサイトにHKM広告を設置すると、広告が表示されるたびに<strong className="text-[var(--accent)]">1 HKM</strong>が付与されます。
         </p>
-        <div className="rounded bg-[var(--bg)] p-3 text-xs font-mono mb-3 overflow-x-auto">
-          {`<script src="https://hikakinmaniacoin.hikamer.f5.si/ad.js" async></script>`}
-        </div>
+        <div className="mb-3"><AdScriptTag /></div>
         <ul className="text-xs text-[var(--text-dim)] space-y-1 list-disc pl-4 mb-3">
           <li>HKM広告主の広告を優先表示</li>
           <li>広告非表示購入者には表示しない</li>
           <li>HKM広告がない場合は何も表示しない（AdSenseと競合しない）</li>
-          <li>収益を受け取るにはAPIキーが必要です（準備中）</li>
+          <li>広告が表示されるたびに1 HKMが付与されます</li>
         </ul>
         <a href="/api-docs" className="text-sm text-[var(--accent)] hover:underline">APIドキュメントを見る →</a>
       </div>
