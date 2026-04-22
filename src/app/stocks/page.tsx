@@ -47,8 +47,11 @@ function StocksContent() {
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [seeding, setSeeding] = useState(false);
-  const [betPage, setBetPage] = useState(1);
-  const [betPages, setBetPages] = useState(1);
+  const [betSearch, setBetSearch] = useState("");
+
+  const fetchBets = (p = betPage, q = betSearch) => {
+    fetch(`/api/bets?page=${p}&q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); });
+  };
   const [priceFlash, setPriceFlash] = useState<Record<string, "up" | "down">>({});
 
   const fetchStocks = async (q = search, p = page) => {
@@ -76,7 +79,7 @@ function StocksContent() {
   useEffect(() => {
     if (status === "unauthenticated") redirect("/login");
     fetchStocks();
-    fetch(`/api/bets?page=${betPage}`).then((r) => r.json()).then((d) => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); });
+    fetchBets();
 
     // SSE for real-time price updates
     const es = new EventSource("/api/stocks/stream");
@@ -135,7 +138,7 @@ function StocksContent() {
     });
     const data = await res.json();
     setMsg(data.message || data.error || "エラー");
-    fetch(`/api/bets?page=${betPage}`).then((r) => r.json()).then((d) => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); });
+    fetchBets();
   };
 
   const yesPercent = (m: BetMarket) => {
@@ -254,7 +257,16 @@ function StocksContent() {
 
       {/* Bets tab - Polymarket style */}
       {tab === "bets" && (
-        <div className="grid gap-4">
+        <div>
+          <div className="mb-4 flex gap-2">
+            <input value={betSearch} onChange={e => setBetSearch(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { setBetPage(1); fetchBets(1, betSearch); } }}
+              placeholder="ユーザー名で検索..."
+              className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+            <button onClick={() => { setBetPage(1); fetchBets(1, betSearch); }}
+              className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">検索</button>
+          </div>
+          <div className="grid gap-4">
           {markets.map((m) => (
             <div key={m.id} className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
               {/* Header: profile + category */}
@@ -288,7 +300,7 @@ function StocksContent() {
                 </span>
               </div>
 
-              <h3 className="mb-3 text-base font-bold">{m.question}</h3>
+              <h3 className="mb-3 text-base font-bold">{m.profile?.name && m.stockName ? m.question.replace(m.stockName, m.profile.name) : m.question}</h3>
               {m.description && <p className="mb-3 text-xs text-[var(--text-dim)]">{m.description}</p>}
 
               {/* Odds bar */}
@@ -341,13 +353,14 @@ function StocksContent() {
           {markets.length === 0 && <p className="text-[var(--text-dim)]">賭けマーケットはまだありません</p>}
           {betPages > 1 && (
             <div className="mt-4 flex items-center justify-center gap-2">
-              <button disabled={betPage <= 1} onClick={() => { setBetPage(p => p - 1); fetch(`/api/bets?page=${betPage - 1}`).then(r => r.json()).then(d => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); }); }}
+              <button disabled={betPage <= 1} onClick={() => { const p = betPage - 1; setBetPage(p); fetchBets(p); }}
                 className="rounded bg-[var(--card)] px-3 py-1 text-sm disabled:opacity-30">← 前</button>
               <span className="text-sm text-[var(--text-dim)]">{betPage} / {betPages}</span>
-              <button disabled={betPage >= betPages} onClick={() => { setBetPage(p => p + 1); fetch(`/api/bets?page=${betPage + 1}`).then(r => r.json()).then(d => { setMarkets(d.markets ?? d); setBetPages(d.pages ?? 1); }); }}
+              <button disabled={betPage >= betPages} onClick={() => { const p = betPage + 1; setBetPage(p); fetchBets(p); }}
                 className="rounded bg-[var(--card)] px-3 py-1 text-sm disabled:opacity-30">次 →</button>
             </div>
           )}
+          </div>
         </div>
       )}
     </div>
