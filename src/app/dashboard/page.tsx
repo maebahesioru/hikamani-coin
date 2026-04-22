@@ -72,6 +72,7 @@ interface UserData {
   linkedAccounts: string[];
   dailyClaimed: boolean;
   loginHistory: { date: string; streak: number; amount: string }[];
+  birthday: string | null;
 }
 
 interface Transaction {
@@ -330,6 +331,31 @@ function DashboardContent() {
               ))}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Birthday */}
+      <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-1 text-lg font-bold">誕生日登録</h2>
+        {user.birthday ? (
+          <p className="text-sm text-[var(--text-dim)]">登録済み: {new Date(user.birthday).toLocaleDateString("ja-JP")} （毎年誕生日に 1,000 HKM 付与）</p>
+        ) : (
+          <>
+            <p className="mb-3 text-xs text-[var(--text-dim)]">一度設定したら変更できません。毎年誕生日に 1,000 HKM が付与されます。</p>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const input = (e.currentTarget.elements.namedItem("birthday") as HTMLInputElement).value;
+              if (!confirm(`誕生日を ${new Date(input).toLocaleDateString("ja-JP")} に設定しますか？\n※一度設定したら変更できません`)) return;
+              const res = await fetch("/api/me/birthday", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ birthday: input }) });
+              const data = await res.json();
+              if (res.ok) { alert(data.message); fetchData(); }
+              else alert(data.error);
+            }} className="flex gap-2">
+              <input type="date" name="birthday" required max={new Date().toISOString().slice(0,10)}
+                className="rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+              <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">登録</button>
+            </form>
+          </>
         )}
       </div>
 

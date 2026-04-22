@@ -47,6 +47,7 @@ export async function GET() {
       amount: l.amount.toString(),
     })),
     linkedAccounts: user.linkedAccounts.map((a) => a.provider),
+    birthday: user.birthday?.toISOString() ?? null,
     stockPositions: user.stockPositions.map((p) => ({
       stockName: p.stock.name,
       quantity: p.quantity,
