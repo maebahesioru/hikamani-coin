@@ -143,7 +143,15 @@ function DashboardContent() {
       window.location.href = "/login";
       return;
     }
-    if (status === "authenticated") fetchData();
+    if (status === "authenticated") {
+      fetchData();
+      // Save session token for ad.js cross-site use
+      fetch("/api/auth/session").then(r => r.json()).then(s => {
+        if (s?.user?.id) {
+          localStorage.setItem("hkm_session", s.user.id);
+        }
+      });
+    }
   }, [status, fetchData]);
 
   const claimDaily = async () => {

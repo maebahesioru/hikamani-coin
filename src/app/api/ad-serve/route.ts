@@ -12,17 +12,15 @@ export async function GET(req: NextRequest) {
   // Check if user has ad-hide purchase
   let hideAds = false;
   if (sessionToken) {
-    const session = await prisma.session.findUnique({
-      where: { token: sessionToken },
-      include: { user: { include: { purchases: { include: { item: true } } } } },
+    // sessionToken is userId stored in localStorage
+    const purchases = await prisma.purchase.findMany({
+      where: {
+        userId: sessionToken,
+        item: { slug: { in: ["ad-hide-30d", "ad-hide-forever"] } },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
     });
-    if (session?.user) {
-      const now = new Date();
-      hideAds = session.user.purchases.some((p) => {
-        if (!["ad-hide-30d", "ad-hide-forever"].includes(p.item.slug)) return false;
-        return !p.expiresAt || p.expiresAt > now;
-      });
-    }
+    hideAds = purchases.length > 0;
   }
 
   if (hideAds) {
