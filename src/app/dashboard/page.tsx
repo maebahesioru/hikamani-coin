@@ -202,7 +202,6 @@ function DashboardContent() {
               コピー
             </button>
           </div>
-          </div>
         </div>
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
           <p className="text-sm text-[var(--text-dim)]">連続ログイン</p>
