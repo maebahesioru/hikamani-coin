@@ -50,6 +50,7 @@ function StocksContent() {
   const [betSearch, setBetSearch] = useState("");
   const [betPage, setBetPage] = useState(1);
   const [betPages, setBetPages] = useState(1);
+  const betCaching = useRef(false);
 
   const fetchBets = (p = betPage, q = betSearch) => {
     fetch(`/api/bets?page=${p}&q=${encodeURIComponent(q)}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(d => {
@@ -58,11 +59,12 @@ function StocksContent() {
       const zero = list.filter(m => Number(m.yesPool) + Number(m.noPool) === 0).sort(() => Math.random() - 0.5);
       setMarkets([...active, ...zero]);
       setBetPages(d.pages ?? 1);
-      // Auto-cache missing profiles
+      // Auto-cache missing profiles (once)
       const uncached = list.filter(m => !m.profile && m.stockName).map(m => m.stockName!);
-      if (uncached.length > 0) {
+      if (uncached.length > 0 && !betCaching.current) {
+        betCaching.current = true;
         fetch("/api/stocks/cache-profiles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handles: uncached }) })
-          .then(() => setTimeout(() => fetchBets(p, q), 3000)).catch(() => {});
+          .then(() => setTimeout(() => { betCaching.current = false; fetchBets(p, q); }, 3000)).catch(() => { betCaching.current = false; });
       }
     });
   };
