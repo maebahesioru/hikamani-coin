@@ -7,8 +7,8 @@ const ADMIN_IPS = (process.env.MAINTENANCE_ALLOW_IPS || "").split(",").map(s => 
 export function middleware(req: NextRequest) {
   if (!MAINTENANCE) return NextResponse.next();
 
-  // APIは通す（管理者がseed等を叩けるように）
-  if (req.nextUrl.pathname.startsWith("/api/")) return NextResponse.next();
+  // APIとad.jsは通す
+  if (req.nextUrl.pathname.startsWith("/api/") || req.nextUrl.pathname === "/ad.js") return NextResponse.next();
 
   // 許可IPは通す
   const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";

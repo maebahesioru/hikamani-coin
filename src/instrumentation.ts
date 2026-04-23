@@ -1,7 +1,7 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const CRON_SECRET = process.env.CRON_SECRET || "";
-    const BASE = process.env.AUTH_URL || "http://localhost:3000";
+    const BASE = "http://localhost:3000";
 
     const callCron = async (type: string) => {
       try {
