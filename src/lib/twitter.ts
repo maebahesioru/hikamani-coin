@@ -366,7 +366,9 @@ export async function getBatchMomentum(screenNames: string[], hours = 24): Promi
     chunks.push(screenNames.slice(i, i + chunkSize));
   }
 
-  await Promise.all(chunks.map(async (chunk) => {
+  await Promise.all(chunks.map(async (chunk, idx) => {
+    // Stagger requests to avoid rate limiting
+    await new Promise(r => setTimeout(r, idx * 200));
     const query = "(" + chunk.map(h => `ID:${h}`).join(" OR ") + ")";
     const since = Math.floor(Date.now() / 1000) - hours * 3600;
     const params = new URLSearchParams({ p: query, md: "h", results: "100", since: String(since) });
