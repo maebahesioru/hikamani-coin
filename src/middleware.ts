@@ -11,8 +11,8 @@ export function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/api/")) return NextResponse.next();
 
   // 許可IPは通す
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("cf-connecting-ip") || "";
-  if (ADMIN_IPS.includes(ip)) return NextResponse.next();
+  const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
+  if (ADMIN_IPS.length > 0 && ADMIN_IPS.some(allowed => ip.includes(allowed))) return NextResponse.next();
 
   return new NextResponse(
     `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
