@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const active = req.nextUrl.searchParams.get("active") !== "false";
   const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") || "1"));
   const limit = 20;
-  const q = req.nextUrl.searchParams.get("q") || "";
+  const q = (req.nextUrl.searchParams.get("q") || "").trim();
 
   const where = {
     ...(active ? { resolved: false, endsAt: { gt: new Date() } } : {}),

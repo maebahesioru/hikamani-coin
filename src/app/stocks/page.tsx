@@ -52,7 +52,7 @@ function StocksContent() {
   const [betPages, setBetPages] = useState(1);
 
   const fetchBets = (p = betPage, q = betSearch) => {
-    fetch(`/api/bets?page=${p}&q=${encodeURIComponent(q)}`).then(r => r.json()).then(d => {
+    fetch(`/api/bets?page=${p}&q=${encodeURIComponent(q)}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(d => {
       const list: BetMarket[] = d.markets ?? d;
       const active = list.filter(m => Number(m.yesPool) + Number(m.noPool) > 0);
       const zero = list.filter(m => Number(m.yesPool) + Number(m.noPool) === 0).sort(() => Math.random() - 0.5);
