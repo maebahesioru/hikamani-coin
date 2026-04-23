@@ -19,6 +19,7 @@ export function Navbar() {
               <Link href="/dashboard" className="hover:text-[var(--accent)]">ダッシュボード</Link>
               <Link href="/shop" className="hover:text-[var(--accent)]">ショップ</Link>
               <Link href="/stocks" className="hover:text-[var(--accent)]">ヒカマーズ株</Link>
+              <Link href="/ranking" className="hover:text-[var(--accent)]">ランキング</Link>
               <Link href="/ads" className="hover:text-[var(--accent)]">広告</Link>
               <button onClick={() => {
                 if (window.confirm("ログアウトしますか？")) signOut({ callbackUrl: "/login" });
