@@ -27,8 +27,12 @@ export async function GET() {
   return ok({ address, ltcJpyRate: rate, hkmPerJpy: 100 });
 }
 
-// POST: 入金確認 (webhook or polling)
+// POST: 入金確認 (Electrum webhook - CRON_SECRET認証)
 export async function POST(req: NextRequest) {
+  const secret = req.headers.get("x-cron-secret");
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   const body = await req.json();
   const { txHash, address, ltcAmount } = body as {
     txHash: string;

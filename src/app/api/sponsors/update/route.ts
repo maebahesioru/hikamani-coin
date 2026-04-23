@@ -12,6 +12,8 @@ export async function POST(req: NextRequest) {
     avatarUrl?: string;
     linkUrl?: string;
   };
+  if (displayName && displayName.length > 50) return badRequest("表示名は50文字以内にしてください");
+  if (avatarUrl && avatarUrl.length > 500) return badRequest("URLが長すぎます");
 
   // Check active sponsor purchase
   const purchase = await prisma.purchase.findFirst({

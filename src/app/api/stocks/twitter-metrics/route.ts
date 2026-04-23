@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { getUserMomentum, fetchFxProfile } from "@/lib/twitter";
-import { ok } from "@/lib/api-utils";
+import { getAuthUser, unauthorized, ok } from "@/lib/api-utils";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
+  const user = await getAuthUser();
+  if (!user || user.id !== process.env.ADMIN_USER_ID) return unauthorized();
   const stockId = req.nextUrl.searchParams.get("stockId");
   const screenName = req.nextUrl.searchParams.get("screenName");
 
