@@ -64,7 +64,7 @@ function AdsContent() {
     const data = await res.json();
     if (res.ok) {
       showToast("広告を掲載しました！");
-      setContent(""); setImageUrl(""); setLinkUrl("");
+      setContent(""); setLinkUrl("");
       fetch("/api/ads").then(r => r.json()).then(setAds);
     } else {
       showToast(data.error || "エラーが発生しました", "error");
