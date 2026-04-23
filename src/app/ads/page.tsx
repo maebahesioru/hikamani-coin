@@ -188,6 +188,7 @@ function AdsContent() {
                   <span className="text-[var(--text-dim)] text-xs">{new Date(ad.expiresAt).toLocaleString("ja-JP")} まで</span>
                 </div>
                 <p>{ad.content}</p>
+                {ad.imageUrl && <img src={ad.imageUrl} alt="" className="mt-2 max-h-32 rounded" />}
                 {ad.linkUrl && <a href={ad.linkUrl} className="text-xs text-[var(--accent)]">{ad.linkUrl}</a>}
               </div>
             ))}
