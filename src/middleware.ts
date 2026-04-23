@@ -1,59 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-// Rate limits per minute
-const LIMITS: Record<string, number> = {
-  "/api/external": 60,
-  "/api/checkout": 10,
-  "/api/wallet/transfer": 10,
-  "/api/stocks": 30,
-  "/api/bets": 30,
-  "/api/bonus": 5,
-  "/api/shop": 20,
-  "/api/sponsors": 60,
-  "/ad.js": 120,
-};
+const MAINTENANCE = process.env.MAINTENANCE_MODE === "true";
+const ADMIN_IPS = (process.env.MAINTENANCE_ALLOW_IPS || "").split(",").map(s => s.trim()).filter(Boolean);
 
-function getLimit(pathname: string): number {
-  for (const [prefix, limit] of Object.entries(LIMITS)) {
-    if (pathname.startsWith(prefix)) return limit;
-  }
-  return 100; // default
+export function middleware(req: NextRequest) {
+  if (!MAINTENANCE) return NextResponse.next();
+
+  // APIは通す（管理者がseed等を叩けるように）
+  if (req.nextUrl.pathname.startsWith("/api/")) return NextResponse.next();
+
+  // 許可IPは通す
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("cf-connecting-ip") || "";
+  if (ADMIN_IPS.includes(ip)) return NextResponse.next();
+
+  return new NextResponse(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>メンテナンス中 - ヒカマニコイン</title>
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a0f;color:#fff;font-family:sans-serif}
+.c{text-align:center;padding:2rem}.t{font-size:3rem;margin-bottom:.5rem}.s{color:#94a3b8;font-size:.9rem}</style></head>
+<body><div class="c"><div class="t">🔧</div><h1>メンテナンス中</h1><p class="s">現在メンテナンス中です。しばらくお待ちください。</p></div></body></html>`,
+    { status: 503, headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "3600" } }
+  );
 }
 
-function getClientId(req: NextRequest): string {
-  const apiKey = req.headers.get("x-api-key");
-  if (apiKey) return `apikey:${apiKey}`;
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || req.headers.get("x-real-ip")
-    || "unknown";
-  return `ip:${ip}`;
-}
-
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // Only rate limit API routes
-  if (!pathname.startsWith("/api/") && pathname !== "/ad.js") {
-    return NextResponse.next();
-  }
-
-  const limit = getLimit(pathname);
-  const clientId = getClientId(req);
-  const key = `ratelimit:${clientId}:${pathname.split("/").slice(0, 3).join("/")}`;
-
-  // Use edge-compatible in-memory fallback (Redis not available in middleware)
-  // Simple sliding window using response headers
-  const now = Math.floor(Date.now() / 60000); // minute bucket
-  const countKey = `${key}:${now}`;
-
-  // Use Cloudflare KV or just pass through with headers for now
-  // Real rate limiting is done at the API level via Redis
-  const response = NextResponse.next();
-  response.headers.set("X-RateLimit-Limit", String(limit));
-  response.headers.set("X-RateLimit-Window", "60s");
-  return response;
-}
-
-export const config = {
-  matcher: ["/api/:path*", "/ad.js"],
-};
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"] };
