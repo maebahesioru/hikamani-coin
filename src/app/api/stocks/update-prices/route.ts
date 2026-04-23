@@ -6,7 +6,9 @@ import type { FxProfile } from "@/lib/twitter";
 
 export async function POST() {
   const handles = await loadHandles();
-  const stocks = await prisma.stock.findMany();
+  const allStocks = await prisma.stock.findMany({ select: { id: true, name: true, currentPrice: true } });
+  // ランダムに50件選択
+  const stocks = allStocks.sort(() => Math.random() - 0.5).slice(0, 50);
   const results = [];
   const newMarkets = [];
 
