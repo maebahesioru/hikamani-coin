@@ -8,12 +8,12 @@ export async function POST() {
   const handles = await loadHandles();
   const allStocks = await prisma.stock.findMany({ select: { id: true, name: true, currentPrice: true } });
   // ランダムに50件選択
-  const stocks = allStocks.sort(() => Math.random() - 0.5).slice(0, 50);
+  const stocks = allStocks.sort(() => Math.random() - 0.5).slice(0, 200);
   const results = [];
   const newMarkets = [];
 
-  // Update stock prices based on momentum
-  for (const stock of stocks) {
+  // Update stock prices based on momentum (parallel)
+  const updateResults = await Promise.all(stocks.map(async (stock) => {
     const metrics = await getUserMomentum(stock.name);
     const prevKey = `stock:momentum:${stock.id}`;
     let prevMomentum = 0;
@@ -22,22 +22,15 @@ export async function POST() {
     const momentumDelta = prevMomentum > 0 ? (metrics.momentum - prevMomentum) / prevMomentum : 0;
     const randomFactor = (Math.random() - 0.45) * 0.02;
 
-    // Full Yahoo metrics impact
     let yahooImpact = momentumDelta * 0.5 + randomFactor;
-    // 動画・GIFは話題性が高い
     yahooImpact += metrics.videoCount * 0.005;
     yahooImpact += metrics.gifCount * 0.003;
-    // 認証済みユーザーに言及されると上昇
     yahooImpact += metrics.blueVerifiedCount * 0.003;
     yahooImpact += metrics.businessVerifiedCount * 0.005;
-    // センシティブツイートは下落
     yahooImpact -= metrics.sensitiveCount * 0.01;
-    // 深夜ツイートは微下落（炎上リスク）
     yahooImpact -= metrics.nightTweetCount * 0.002;
-    // ハッシュタグ・メンション多用は話題性
     yahooImpact += Math.min(metrics.hashtagCount * 0.001, 0.02);
     yahooImpact += Math.min(metrics.mentionCount * 0.001, 0.02);
-    // 引用RTされると上昇
     yahooImpact += Math.min(metrics.quoteCount * 0.002, 0.03);
 
     const changeRate = Math.max(-0.10, Math.min(0.15, yahooImpact));
@@ -50,8 +43,9 @@ export async function POST() {
     ]);
     try { await redis.setex(prevKey, 3600, metrics.momentum.toString()); } catch {}
 
-    results.push({ name: stock.name, oldPrice, newPrice: Number(newPrice), changeRate: `${(changeRate * 100).toFixed(2)}%`, momentum: metrics.momentum });
-  }
+    return { name: stock.name, oldPrice, newPrice: Number(newPrice), changeRate: `${(changeRate * 100).toFixed(2)}%`, momentum: metrics.momentum };
+  }));
+  results.push(...updateResults);
 
   // Profile change detection + auto bet market generation
   // Process in batches to avoid overwhelming FXTwitter
