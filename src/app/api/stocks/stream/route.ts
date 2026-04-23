@@ -1,11 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: unknown) => {
