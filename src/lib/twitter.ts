@@ -355,3 +355,68 @@ export async function loadHandles(): Promise<string[]> {
     return [];
   }
 }
+
+
+// Batch momentum: 50人ずつまとめてYahoo APIを叩く
+export async function getBatchMomentum(screenNames: string[], hours = 24): Promise<Map<string, TweetMetrics>> {
+  const result = new Map<string, TweetMetrics>();
+  const chunkSize = 50;
+  const chunks: string[][] = [];
+  for (let i = 0; i < screenNames.length; i += chunkSize) {
+    chunks.push(screenNames.slice(i, i + chunkSize));
+  }
+
+  await Promise.all(chunks.map(async (chunk) => {
+    const query = "(" + chunk.map(h => `ID:${h}`).join(" OR ") + ")";
+    const since = Math.floor(Date.now() / 1000) - hours * 3600;
+    const params = new URLSearchParams({ p: query, md: "h", results: "100", since: String(since) });
+    try {
+      const res = await fetch(`${YAHOO_API}?${params}`, {
+        headers: { ...YAHOO_HEADERS, "User-Agent": randomUA() },
+      });
+      if (!res.ok) { chunk.forEach(h => result.set(h, emptyMetrics())); return; }
+      const data = await res.json();
+      const entries: Record<string, unknown>[] = data.timeline?.entry ?? [];
+
+      // ユーザーごとに振り分け
+      const byUser = new Map<string, Record<string, unknown>[]>();
+      chunk.forEach(h => byUser.set(h.toLowerCase(), []));
+      for (const e of entries) {
+        const sn = ((e.screenName as string) || "").toLowerCase();
+        byUser.get(sn)?.push(e);
+      }
+
+      for (const h of chunk) {
+        const userEntries = byUser.get(h.toLowerCase()) || [];
+        let totalLikes = 0, totalRts = 0, totalReplies = 0, totalQuotes = 0;
+        let sensitiveCount = 0, mediaCount = 0, videoCount = 0, gifCount = 0;
+        let hashtagCount = 0, mentionCount = 0, replyCount = 0, quoteCount = 0;
+        let blueVerifiedCount = 0, businessVerifiedCount = 0, nightTweetCount = 0;
+        for (const e of userEntries) {
+          totalLikes += (e.likesCount as number) ?? 0;
+          totalRts += (e.rtCount as number) ?? 0;
+          totalReplies += (e.replyCount as number) ?? 0;
+          totalQuotes += (e.qtCount as number) ?? 0;
+          if (e.possiblySensitive) sensitiveCount++;
+          const mt = (e.mediaType as string[]) ?? [];
+          if (mt.length > 0) mediaCount++;
+          if (mt.includes("video")) videoCount++;
+          if (mt.includes("animated_gif")) gifCount++;
+          if (((e.hashtags as unknown[]) ?? []).length > 0) hashtagCount++;
+          if (((e.mentions as unknown[]) ?? []).length > 0) mentionCount++;
+          if (e.inReplyTo) replyCount++;
+          if (e.quotedTweet) quoteCount++;
+          const badge = (e.badge as Record<string, string>) ?? {};
+          if (badge.type === "blue") blueVerifiedCount++;
+          if (badge.type === "business") businessVerifiedCount++;
+          const hour = new Date(((e.createdAt as number) ?? 0) * 1000).getHours();
+          if (hour >= 0 && hour < 5) nightTweetCount++;
+        }
+        const momentum = userEntries.length * 10 + totalLikes * 2 + totalRts * 5 + totalReplies + totalQuotes * 3;
+        result.set(h, { tweetCount: userEntries.length, totalLikes, totalRts, totalReplies, totalQuotes, momentum, sensitiveCount, mediaCount, videoCount, gifCount, hashtagCount, mentionCount, replyCount, quoteCount, blueVerifiedCount, businessVerifiedCount, nightTweetCount, topTweets: [] });
+      }
+    } catch { chunk.forEach(h => result.set(h, emptyMetrics())); }
+  }));
+
+  return result;
+}

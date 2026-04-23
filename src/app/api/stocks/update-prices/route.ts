@@ -7,14 +7,17 @@ import type { FxProfile } from "@/lib/twitter";
 export async function POST() {
   const handles = await loadHandles();
   const allStocks = await prisma.stock.findMany({ select: { id: true, name: true, currentPrice: true } });
-  // ランダムに50件選択
-  const stocks = allStocks.sort(() => Math.random() - 0.5).slice(0, 200);
+  const stocks = allStocks;
   const results = [];
   const newMarkets = [];
 
+  // Batch fetch all momentum in ~20 requests instead of 1009
+  const { getBatchMomentum } = await import("@/lib/twitter");
+  const momentumMap = await getBatchMomentum(stocks.map(s => s.name));
+
   // Update stock prices based on momentum (parallel)
   const updateResults = await Promise.all(stocks.map(async (stock) => {
-    const metrics = await getUserMomentum(stock.name);
+    const metrics = momentumMap.get(stock.name) ?? { momentum: 0, tweetCount: 0, totalLikes: 0, totalRts: 0, totalReplies: 0, totalQuotes: 0, sensitiveCount: 0, mediaCount: 0, videoCount: 0, gifCount: 0, hashtagCount: 0, mentionCount: 0, replyCount: 0, quoteCount: 0, blueVerifiedCount: 0, businessVerifiedCount: 0, nightTweetCount: 0, topTweets: [] };
     const prevKey = `stock:momentum:${stock.id}`;
     let prevMomentum = 0;
     try { const c = await redis.get(prevKey); if (c) prevMomentum = parseFloat(c); } catch {}
