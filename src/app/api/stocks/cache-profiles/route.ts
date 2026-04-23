@@ -5,6 +5,11 @@ import { ok } from "@/lib/api-utils";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
+  const secret = req.headers.get("x-cron-secret");
+  const isAdmin = (await import("@/lib/api-utils").then(m => m.getAuthUser()))?.id === process.env.ADMIN_USER_ID;
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET && !isAdmin) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   const body = await req.json().catch(() => ({}));
   let targets: string[] = body.handles || [];
 

@@ -2,9 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { getUserMomentum, fetchFxProfile, diffProfiles, suggestBetMarkets, loadHandles } from "@/lib/twitter";
 import { ok } from "@/lib/api-utils";
 import { redis } from "@/lib/redis";
+import { NextRequest } from "next/server";
 import type { FxProfile } from "@/lib/twitter";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const secret = req.headers.get("x-cron-secret");
+  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   const handles = await loadHandles();
   const allStocks = await prisma.stock.findMany({ select: { id: true, name: true, currentPrice: true } });
   const stocks = allStocks;

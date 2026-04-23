@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ok } from "@/lib/api-utils";
+import { getAuthUser, unauthorized, ok } from "@/lib/api-utils";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -39,6 +39,8 @@ const MARKET_TEMPLATES = [
 ];
 
 export async function POST() {
+  const user = await getAuthUser();
+  if (!user || user.id !== process.env.ADMIN_USER_ID) return unauthorized();
   const txt = readFileSync(join(process.cwd(), "public", "handle.txt"), "utf-8");
   const handles = txt.split("\n").map(l => l.trim()).filter(Boolean);
 
