@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getUserMomentum, fetchFxProfile, diffProfiles, suggestBetMarkets, loadHandles } from "@/lib/twitter";
+import { getUserMomentum, fetchFxProfile, diffProfiles, suggestBetMarkets, loadHandles, getBatchMomentum } from "@/lib/twitter";
 import { ok } from "@/lib/api-utils";
 import { redis } from "@/lib/redis";
 import { NextRequest } from "next/server";
@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
   const newMarkets = [];
 
   // Batch fetch all momentum in ~20 requests instead of 1009
-  const { getBatchMomentum } = await import("@/lib/twitter");
   const momentumMap = await getBatchMomentum(stocks.map(s => s.name));
 
   // Update stock prices based on momentum (parallel)
