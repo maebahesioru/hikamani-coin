@@ -12,11 +12,20 @@ export async function GET(req: NextRequest) {
   const limit = 20;
 
   const where = q ? { name: { contains: q, mode: "insensitive" as const } } : {};
+  const sort = req.nextUrl.searchParams.get("sort") || "price_desc";
+  const orderBy: Record<string, string> = {
+    price_desc: "currentPrice:desc",
+    price_asc: "currentPrice:asc",
+    updated: "updatedAt:desc",
+    name: "name:asc",
+  }[sort] || "currentPrice:desc";
+  const [orderField, orderDir] = orderBy.split(":");
+
   const [stocks, total] = await Promise.all([
     prisma.stock.findMany({
       where,
       include: { priceHistory: { orderBy: { createdAt: "desc" }, take: 30 } },
-      orderBy: { currentPrice: "desc" },
+      orderBy: { [orderField]: orderDir },
       skip: (page - 1) * limit,
       take: limit,
     }),

@@ -43,6 +43,7 @@ function StocksContent() {
   const [betAmounts, setBetAmounts] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("price_desc");
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -70,8 +71,8 @@ function StocksContent() {
   };
   const [priceFlash, setPriceFlash] = useState<Record<string, "up" | "down">>({});
 
-  const fetchStocks = async (q = search, p = page) => {
-    const res = await fetch(`/api/stocks?q=${encodeURIComponent(q)}&page=${p}`);
+  const fetchStocks = async (q = search, p = page, s = sort) => {
+    const res = await fetch(`/api/stocks?q=${encodeURIComponent(q)}&page=${p}&sort=${s}`);
     if (res.ok) {
       const data = await res.json();
       setStocks(data.stocks ?? []);
@@ -227,6 +228,13 @@ function StocksContent() {
               />
               <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">検索</button>
             </form>
+            <select value={sort} onChange={e => { setSort(e.target.value); setPage(1); fetchStocks(search, 1, e.target.value); }}
+              className="rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm">
+              <option value="price_desc">株価 高い順</option>
+              <option value="price_asc">株価 低い順</option>
+              <option value="updated">更新順</option>
+              <option value="name">名前順</option>
+            </select>
           </div>
           <p className="mb-3 text-xs text-[var(--text-dim)]">{total}件中 {stocks.length}件表示</p>
           <div className="grid gap-4">
