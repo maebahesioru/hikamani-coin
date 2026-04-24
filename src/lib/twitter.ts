@@ -430,24 +430,39 @@ export async function getBatchMomentum(screenNames: string[]): Promise<Map<strin
         byUser.get(sn)?.push(e);
       }
 
-      // @検索: 言及数をユーザーごとに集計
+      // @検索: 言及数・認証ユーザー言及・リプライ言及をユーザーごとに集計
       const mentionsByUser = new Map<string, number>();
-      chunk.forEach(h => mentionsByUser.set(h.toLowerCase(), 0));
+      const verifiedMentionsByUser = new Map<string, number>();
+      const replyMentionsByUser = new Map<string, number>();
+      chunk.forEach(h => { mentionsByUser.set(h.toLowerCase(), 0); verifiedMentionsByUser.set(h.toLowerCase(), 0); replyMentionsByUser.set(h.toLowerCase(), 0); });
       for (const e of mentionEntries) {
+        const badge = (e.badge as Record<string, string>) ?? {};
+        const isVerified = badge.type === "blue" || badge.type === "business";
         const mentions = (e.mentions as Record<string, string>[]) ?? [];
+        const replyMentions = (e.replyMentions as string[]) ?? [];
         for (const m of mentions) {
           const sn = (m.screenName || "").toLowerCase();
-          if (mentionsByUser.has(sn)) mentionsByUser.set(sn, (mentionsByUser.get(sn) || 0) + 1);
+          if (mentionsByUser.has(sn)) {
+            mentionsByUser.set(sn, (mentionsByUser.get(sn) || 0) + 1);
+            if (isVerified) verifiedMentionsByUser.set(sn, (verifiedMentionsByUser.get(sn) || 0) + 1);
+          }
+        }
+        for (const sn of replyMentions) {
+          const snl = sn.toLowerCase();
+          if (replyMentionsByUser.has(snl)) replyMentionsByUser.set(snl, (replyMentionsByUser.get(snl) || 0) + 1);
         }
       }
 
       for (const h of chunk) {
         const userEntries = byUser.get(h.toLowerCase()) || [];
         const incomingMentions = mentionsByUser.get(h.toLowerCase()) || 0;
+        const verifiedMentions = verifiedMentionsByUser.get(h.toLowerCase()) || 0;
+        const replyMentions = replyMentionsByUser.get(h.toLowerCase()) || 0;
         let totalLikes = 0, totalRts = 0, totalReplies = 0, totalQuotes = 0;
         let sensitiveCount = 0, mediaCount = 0, videoCount = 0, gifCount = 0;
         let hashtagCount = 0, mentionCount = 0, replyCount = 0, quoteCount = 0;
         let blueVerifiedCount = 0, businessVerifiedCount = 0, nightTweetCount = 0;
+        let urlCount = 0, themeCount = 0;
         for (const e of userEntries) {
           totalLikes += (e.likesCount as number) ?? 0;
           totalRts += (e.rtCount as number) ?? 0;
@@ -467,9 +482,13 @@ export async function getBatchMomentum(screenNames: string[]): Promise<Map<strin
           if (badge.type === "business") businessVerifiedCount++;
           const hour = new Date(((e.createdAt as number) ?? 0) * 1000).getHours();
           if (hour >= 0 && hour < 5) nightTweetCount++;
+          urlCount += ((e.urls as unknown[]) ?? []).length;
+          themeCount += ((e.userThemeNormal as unknown[]) ?? []).length;
         }
-        // 言及数もmomentumに加算（言及されるほど話題性が高い）
-        const momentum = userEntries.length * 10 + totalLikes * 2 + totalRts * 5 + totalReplies + totalQuotes * 3 + incomingMentions * 8;
+        // 言及数・認証言及・リプライ言及・URL・テーマもmomentumに加算
+        const momentum = userEntries.length * 10 + totalLikes * 2 + totalRts * 5 + totalReplies + totalQuotes * 3
+          + incomingMentions * 8 + verifiedMentions * 15 + replyMentions * 5
+          + Math.min(urlCount * 2, 10) + Math.min(themeCount, 10);
         result.set(h, { tweetCount: userEntries.length, totalLikes, totalRts, totalReplies, totalQuotes, momentum, sensitiveCount, mediaCount, videoCount, gifCount, hashtagCount, mentionCount, replyCount, quoteCount, blueVerifiedCount, businessVerifiedCount, nightTweetCount, topTweets: [] });
       }
     } catch { chunk.forEach(h => result.set(h, emptyMetrics())); }
