@@ -182,6 +182,15 @@ export async function POST(req: NextRequest) {
             await prisma.stock.update({ where: { id: stock.id }, data: { currentPrice: newPrice } });
             await prisma.stockPrice.create({ data: { stockId: stock.id, price: newPrice } });
           }
+
+          // ユーザー名変更時はStockのnameを更新
+          if (curr.alive && curr.screenName !== handle) {
+            try {
+              await prisma.stock.update({ where: { id: stock.id }, data: { name: curr.screenName } });
+              await redis.setex(`profile:${curr.screenName}`, 86400, JSON.stringify(curr));
+              await redis.del(`profile:${handle}`);
+            } catch { /* 新ハンドルが既存Stockと衝突する場合はスキップ */ }
+          }
         }
       }
 
