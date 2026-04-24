@@ -13,13 +13,12 @@ export async function GET(req: NextRequest) {
 
   const where = q ? { name: { contains: q, mode: "insensitive" as const } } : {};
   const sort = req.nextUrl.searchParams.get("sort") || "price_desc";
-  const orderBy: Record<string, string> = {
-    price_desc: "currentPrice:desc",
-    price_asc: "currentPrice:asc",
-    updated: "updatedAt:desc",
-    name: "name:asc",
-  }[sort] || "currentPrice:desc";
-  const [orderField, orderDir] = orderBy.split(":");
+    price_desc: { field: "currentPrice", dir: "desc" },
+    price_asc:  { field: "currentPrice", dir: "asc" },
+    updated:    { field: "updatedAt",    dir: "desc" },
+    name:       { field: "name",         dir: "asc" },
+  };
+  const { field: orderField, dir: orderDir } = sortMap[sort] ?? sortMap.price_desc;
 
   const [stocks, total] = await Promise.all([
     prisma.stock.findMany({
