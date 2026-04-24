@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
 
   const where = q ? { name: { contains: q, mode: "insensitive" as const } } : {};
   const sort = req.nextUrl.searchParams.get("sort") || "price_desc";
+  const sortMap: Record<string, { field: string; dir: "asc" | "desc" }> = {
     price_desc: { field: "currentPrice", dir: "desc" },
     price_asc:  { field: "currentPrice", dir: "asc" },
     updated:    { field: "updatedAt",    dir: "desc" },
