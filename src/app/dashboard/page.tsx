@@ -362,9 +362,24 @@ function DashboardContent() {
               className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-[var(--text-dim)]">アバターURL（空欄でOAuth画像を使用）</label>
-            <input name="avatar" defaultValue={user.avatar || ""} placeholder="https://..."
-              className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+            <label className="mb-1 block text-xs text-[var(--text-dim)]">アバター（空欄でOAuth画像を使用）</label>
+            <div className="flex gap-2 items-center">
+              <input name="avatar" defaultValue={user.avatar || ""} placeholder="https://..."
+                className="flex-1 rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" id="avatar-input" />
+              <label className="cursor-pointer rounded bg-[var(--border)] px-3 py-2 text-xs hover:bg-[var(--accent)] hover:text-black">
+                アップロード
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  const fd = new FormData(); fd.append("file", file);
+                  const res = await fetch("/api/upload", { method: "POST", body: fd });
+                  if (res.ok) {
+                    const { url } = await res.json();
+                    const input = document.getElementById("avatar-input") as HTMLInputElement;
+                    if (input) input.value = window.location.origin + url;
+                  }
+                }} />
+              </label>
+            </div>
           </div>
           <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">保存</button>
         </form>
