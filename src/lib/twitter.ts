@@ -369,7 +369,7 @@ export async function getBatchMomentum(screenNames: string[], hours = 24): Promi
   await Promise.all(chunks.map(async (chunk, idx) => {
     const query = "(" + chunk.map(h => `ID:${h}`).join(" OR ") + ")";
     const since = Math.floor(Date.now() / 1000) - hours * 3600;
-    const params = new URLSearchParams({ p: query, md: "h", results: "100", since: String(since) });
+    const params = new URLSearchParams({ p: query, md: "h", results: "40", since: String(since) });
     try {
       const res = await fetch(`${YAHOO_API}?${params}`, {
         headers: { ...YAHOO_HEADERS, "User-Agent": randomUA() },
