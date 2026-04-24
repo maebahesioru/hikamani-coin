@@ -69,6 +69,7 @@ interface UserData {
   streak: number;
   referralCode: string;
   displayName: string;
+  avatar: string | null;
   linkedAccounts: string[];
   dailyClaimed: boolean;
   loginHistory: { date: string; streak: number; amount: string }[];
@@ -334,6 +335,39 @@ function DashboardContent() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Profile Edit */}
+      <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+        <h2 className="mb-4 text-lg font-bold">プロフィール編集</h2>
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          const displayName = fd.get("displayName") as string;
+          const avatar = fd.get("avatar") as string;
+          const res = await fetch("/api/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: displayName || undefined, avatar: avatar || undefined }) });
+          const data = await res.json();
+          if (res.ok) { alert(data.message); fetchData(); } else alert(data.error);
+        }} className="space-y-3">
+          <div className="flex items-center gap-3 mb-2">
+            {session?.user?.image && <img src={session.user.image} alt="" className="h-12 w-12 rounded-full" />}
+            <div>
+              <p className="font-semibold">{user.displayName || session?.user?.name}</p>
+              <p className="text-xs text-[var(--text-dim)]">{session?.user?.email}</p>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-[var(--text-dim)]">表示名（1〜50文字）</label>
+            <input name="displayName" defaultValue={user.displayName || ""} placeholder={session?.user?.name || ""}
+              className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-[var(--text-dim)]">アバターURL（空欄でOAuth画像を使用）</label>
+            <input name="avatar" defaultValue={user.avatar || ""} placeholder="https://..."
+              className="w-full rounded border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm" />
+          </div>
+          <button type="submit" className="rounded bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-black">保存</button>
+        </form>
       </div>
 
       {/* Birthday */}

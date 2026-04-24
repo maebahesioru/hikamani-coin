@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, ok } from "@/lib/api-utils";
 
 export async function GET() {
@@ -56,4 +56,23 @@ export async function GET() {
     })),
     createdAt: user.createdAt,
   });
+}
+
+export async function PATCH(req: import("next/server").NextRequest) {
+  const user = await getAuthUser();
+  if (!user) return unauthorized();
+
+  const { displayName, avatar } = await req.json() as { displayName?: string; avatar?: string };
+  if (displayName !== undefined && (displayName.length < 1 || displayName.length > 50))
+    return (await import("@/lib/api-utils")).badRequest("表示名は1〜50文字にしてください");
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      ...(displayName !== undefined ? { displayName } : {}),
+      ...(avatar !== undefined ? { avatar } : {}),
+    },
+  });
+
+  return ok({ message: "プロフィールを更新しました" });
 }
