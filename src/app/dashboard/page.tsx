@@ -81,6 +81,8 @@ interface Transaction {
   amount: string;
   memo: string | null;
   createdAt: string;
+  senderId: string | null;
+  receiverId: string | null;
 }
 
 const PROVIDERS = [
@@ -401,15 +403,20 @@ function DashboardContent() {
       <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
         <h2 className="mb-4 text-lg font-bold">取引履歴</h2>
         <div className="space-y-2">
-          {txs.map((tx) => (
-            <div key={tx.id} className="flex items-center justify-between border-b border-[var(--border)] py-2 text-sm">
-              <div>
-                <span className="mr-2 rounded bg-[var(--border)] px-2 py-0.5 text-xs">{tx.type}</span>
-                {tx.memo}
+          {txs.map((tx) => {
+            const isOut = tx.senderId === session?.user?.id && tx.type !== "FEE";
+            const sign = isOut ? "-" : "+";
+            const color = isOut ? "text-red-400" : "text-green-400";
+            return (
+              <div key={tx.id} className="flex items-center justify-between border-b border-[var(--border)] py-2 text-sm">
+                <div>
+                  <span className="mr-2 rounded bg-[var(--border)] px-2 py-0.5 text-xs">{tx.type}</span>
+                  {tx.memo}
+                </div>
+                <span className={`font-mono font-bold ${color}`}>{sign}{Number(tx.amount).toLocaleString()} HKM</span>
               </div>
-              <span className="font-mono text-[var(--accent)]">{Number(tx.amount).toLocaleString()} HKM</span>
-            </div>
-          ))}
+            );
+          })}
           {txs.length === 0 && <p className="text-[var(--text-dim)]">取引履歴はありません</p>}
         </div>
       </div>
