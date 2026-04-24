@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     try { const c = await redis.get(prevKey); if (c) prevMomentum = parseFloat(c); } catch {}
 
     const momentumDelta = prevMomentum > 0 ? (metrics.momentum - prevMomentum) / prevMomentum : 0;
-    const randomFactor = (Math.random() - 0.45) * 0.02;
+    const randomFactor = (Math.random() - 0.5) * 0.02;
 
     let yahooImpact = momentumDelta * 0.5 + randomFactor;
     yahooImpact += metrics.videoCount * 0.005;
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     yahooImpact += Math.min(metrics.mentionCount * 0.001, 0.02);
     yahooImpact += Math.min(metrics.quoteCount * 0.002, 0.03);
 
-    const changeRate = Math.max(-0.10, Math.min(0.15, yahooImpact));
+    const changeRate = Math.max(-0.12, Math.min(0.12, yahooImpact));
     const oldPrice = Number(stock.currentPrice);
     const newPrice = BigInt(Math.max(100, Math.round(oldPrice * (1 + changeRate))));
 
