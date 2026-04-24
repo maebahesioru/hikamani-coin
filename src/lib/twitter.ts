@@ -185,6 +185,47 @@ export function diffProfiles(username: string, prev: FxProfile, curr: FxProfile)
   if (curr.basedIn && prev.basedIn !== curr.basedIn)
     changes.push({ type: "based_in_change", text: `${tag}の居住国が変更: ${prev.basedIn || "不明"} → ${curr.basedIn}`, username });
 
+  // フォロー数急増（+5%以上）
+  if (prev.following > 0 && curr.following > prev.following) {
+    const followingDelta = (curr.following - prev.following) / prev.following;
+    if (followingDelta >= 0.05)
+      changes.push({ type: "following_surge", text: `${tag}のフォロー数が急増: ${prev.following} → ${curr.following}`, username });
+  }
+
+  // 総いいね数の節目突破
+  const likeMilestones = [1000, 5000, 10000, 50000, 100000, 500000, 1000000];
+  for (const m of likeMilestones) {
+    if (prev.likes < m && curr.likes >= m)
+      changes.push({ type: "likes_milestone", text: `${tag}の総いいね数が${m.toLocaleString()}を突破`, username });
+  }
+
+  // 総ツイート数の節目突破
+  const tweetMilestones = [1000, 5000, 10000, 50000, 100000];
+  for (const m of tweetMilestones) {
+    if (prev.tweets < m && curr.tweets >= m)
+      changes.push({ type: "tweets_milestone", text: `${tag}の総ツイート数が${m.toLocaleString()}を突破`, username });
+  }
+
+  // メディア投稿数の節目突破
+  const mediaMilestones = [100, 500, 1000, 5000];
+  for (const m of mediaMilestones) {
+    if (prev.mediaCount < m && curr.mediaCount >= m)
+      changes.push({ type: "media_milestone", text: `${tag}のメディア投稿数が${m.toLocaleString()}を突破`, username });
+  }
+
+  // bioにメンション追加
+  const prevMentions = prev.bioFacets.filter(f => f.type === "mention").map(f => f.original || "").sort().join(",");
+  const currMentions = curr.bioFacets.filter(f => f.type === "mention").map(f => f.original || "").sort().join(",");
+  if (prevMentions !== currMentions && currMentions.length > prevMentions.length)
+    changes.push({ type: "bio_mention_added", text: `${tag}のbioにメンションが追加`, username });
+
+  // アカウント周年
+  const ageMilestones = [365, 730, 1095, 1460, 1825];
+  for (const days of ageMilestones) {
+    if (prev.ageDays < days && curr.ageDays >= days)
+      changes.push({ type: "anniversary", text: `${tag}のアカウントが${days / 365}周年`, username });
+  }
+
   return changes;
 }
 

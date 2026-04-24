@@ -145,6 +145,12 @@ export async function POST(req: NextRequest) {
               case "unverified":      priceImpact -= 15; break;
               case "lock":            priceImpact -= 10; break;
               case "unlock":          priceImpact += 5; break;
+              case "following_surge": priceImpact += 5; break;
+              case "likes_milestone": priceImpact += 3; break;
+              case "tweets_milestone": priceImpact += 5; break;
+              case "media_milestone": priceImpact += 2; break;
+              case "bio_mention_added": priceImpact += 2; break;
+              case "anniversary":     priceImpact += 10; break;
             }
           }
           if (curr.alive && prev.alive) {
