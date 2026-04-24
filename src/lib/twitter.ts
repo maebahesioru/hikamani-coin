@@ -480,6 +480,13 @@ export async function getBatchMomentum(screenNames: string[]): Promise<Map<strin
           const badge = (e.badge as Record<string, string>) ?? {};
           if (badge.type === "blue") blueVerifiedCount++;
           if (badge.type === "business") businessVerifiedCount++;
+          // 認証ユーザーのツイートを引用RTしている場合は追加ポイント
+          const qt = e.quotedTweet as Record<string, unknown> | null;
+          if (qt) {
+            const qtBadge = (qt.badge as Record<string, string>) ?? {};
+            if (qtBadge.type === "blue") blueVerifiedCount++;
+            if (qtBadge.type === "business") businessVerifiedCount += 2;
+          }
           const hour = new Date(((e.createdAt as number) ?? 0) * 1000).getHours();
           if (hour >= 0 && hour < 5) nightTweetCount++;
           urlCount += ((e.urls as unknown[]) ?? []).length;
