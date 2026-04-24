@@ -13,8 +13,8 @@ export async function register() {
 
     // 5分ごとに株価更新
     setInterval(() => callCron("prices"), 5 * 60 * 1000);
-    // 15分ごとにプロフィール更新
-    setInterval(() => callCron("profiles"), 15 * 60 * 1000);
+    // 5分ごとにプロフィール更新
+    setInterval(() => callCron("profiles"), 5 * 60 * 1000);
     // 1時間ごとに周年ボーナス+期限切れ賭け処理
     setInterval(() => callCron("all"), 60 * 60 * 1000);
   }
