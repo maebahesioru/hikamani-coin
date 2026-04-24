@@ -97,8 +97,9 @@ function StocksContent() {
     fetchStocks();
     fetchBets();
 
-    // SSE for real-time price updates
-    const es = new EventSource("/api/stocks/stream");
+    // SSE for real-time price updates (current page stocks)
+    const ids = stocks.map(s => s.id).join(",");
+    const es = new EventSource(`/api/stocks/stream${ids ? `?ids=${ids}` : ""}`);
     es.onmessage = (e) => {
       const msg = JSON.parse(e.data);
       if (msg.type === "update") {
