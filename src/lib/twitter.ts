@@ -360,15 +360,13 @@ export async function loadHandles(): Promise<string[]> {
 // Batch momentum: 50人ずつまとめてYahoo APIを叩く
 export async function getBatchMomentum(screenNames: string[], hours = 24): Promise<Map<string, TweetMetrics>> {
   const result = new Map<string, TweetMetrics>();
-  const chunkSize = 50;
+  const chunkSize = 150;
   const chunks: string[][] = [];
   for (let i = 0; i < screenNames.length; i += chunkSize) {
     chunks.push(screenNames.slice(i, i + chunkSize));
   }
 
   await Promise.all(chunks.map(async (chunk, idx) => {
-    // Stagger requests to avoid rate limiting
-    await new Promise(r => setTimeout(r, idx * 200));
     const query = "(" + chunk.map(h => `ID:${h}`).join(" OR ") + ")";
     const since = Math.floor(Date.now() / 1000) - hours * 3600;
     const params = new URLSearchParams({ p: query, md: "h", results: "100", since: String(since) });
