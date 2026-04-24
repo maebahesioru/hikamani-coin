@@ -398,7 +398,7 @@ export async function loadHandles(): Promise<string[]> {
 }
 
 
-// Batch momentum: 50人ずつまとめてYahoo APIを叩く
+// Batch momentum: 150人ずつまとめてYahoo APIを叩く（ID:自分のツイート + @:言及）
 export async function getBatchMomentum(screenNames: string[]): Promise<Map<string, TweetMetrics>> {
   const result = new Map<string, TweetMetrics>();
   const chunkSize = 150;
@@ -407,27 +407,43 @@ export async function getBatchMomentum(screenNames: string[]): Promise<Map<strin
     chunks.push(screenNames.slice(i, i + chunkSize));
   }
 
-  await Promise.all(chunks.map(async (chunk, idx) => {
-    const query = "(" + chunk.map(h => `ID:${h}`).join(" OR ") + ")";
-    const params = new URLSearchParams({ p: query, md: "t", results: "40" });
-    try {
-      const res = await fetch(`${YAHOO_API}?${params}`, {
-        headers: { ...YAHOO_HEADERS, "User-Agent": randomUA() },
-      });
-      if (!res.ok) { chunk.forEach(h => result.set(h, emptyMetrics())); return; }
-      const data = await res.json();
-      const entries: Record<string, unknown>[] = data.timeline?.entry ?? [];
+  await Promise.all(chunks.map(async (chunk) => {
+    const idQuery = "(" + chunk.map(h => `ID:${h}`).join(" OR ") + ")";
+    const mentionQuery = "(" + chunk.map(h => `@${h}`).join(" OR ") + ")";
+    const idParams = new URLSearchParams({ p: idQuery, md: "t", results: "40" });
+    const mentionParams = new URLSearchParams({ p: mentionQuery, md: "t", results: "40" });
 
-      // ユーザーごとに振り分け
+    const [idData, mentionData] = await Promise.all([
+      fetch(`${YAHOO_API}?${idParams}`, { headers: { ...YAHOO_HEADERS, "User-Agent": randomUA() } }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`${YAHOO_API}?${mentionParams}`, { headers: { ...YAHOO_HEADERS, "User-Agent": randomUA() } }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
+
+    try {
+      const idEntries: Record<string, unknown>[] = idData?.timeline?.entry ?? [];
+      const mentionEntries: Record<string, unknown>[] = mentionData?.timeline?.entry ?? [];
+
+      // ID検索: ユーザーごとに振り分け
       const byUser = new Map<string, Record<string, unknown>[]>();
       chunk.forEach(h => byUser.set(h.toLowerCase(), []));
-      for (const e of entries) {
+      for (const e of idEntries) {
         const sn = ((e.screenName as string) || "").toLowerCase();
         byUser.get(sn)?.push(e);
       }
 
+      // @検索: 言及数をユーザーごとに集計
+      const mentionsByUser = new Map<string, number>();
+      chunk.forEach(h => mentionsByUser.set(h.toLowerCase(), 0));
+      for (const e of mentionEntries) {
+        const mentions = (e.mentions as Record<string, string>[]) ?? [];
+        for (const m of mentions) {
+          const sn = (m.screenName || "").toLowerCase();
+          if (mentionsByUser.has(sn)) mentionsByUser.set(sn, (mentionsByUser.get(sn) || 0) + 1);
+        }
+      }
+
       for (const h of chunk) {
         const userEntries = byUser.get(h.toLowerCase()) || [];
+        const incomingMentions = mentionsByUser.get(h.toLowerCase()) || 0;
         let totalLikes = 0, totalRts = 0, totalReplies = 0, totalQuotes = 0;
         let sensitiveCount = 0, mediaCount = 0, videoCount = 0, gifCount = 0;
         let hashtagCount = 0, mentionCount = 0, replyCount = 0, quoteCount = 0;
@@ -452,7 +468,8 @@ export async function getBatchMomentum(screenNames: string[]): Promise<Map<strin
           const hour = new Date(((e.createdAt as number) ?? 0) * 1000).getHours();
           if (hour >= 0 && hour < 5) nightTweetCount++;
         }
-        const momentum = userEntries.length * 10 + totalLikes * 2 + totalRts * 5 + totalReplies + totalQuotes * 3;
+        // 言及数もmomentumに加算（言及されるほど話題性が高い）
+        const momentum = userEntries.length * 10 + totalLikes * 2 + totalRts * 5 + totalReplies + totalQuotes * 3 + incomingMentions * 8;
         result.set(h, { tweetCount: userEntries.length, totalLikes, totalRts, totalReplies, totalQuotes, momentum, sensitiveCount, mediaCount, videoCount, gifCount, hashtagCount, mentionCount, replyCount, quoteCount, blueVerifiedCount, businessVerifiedCount, nightTweetCount, topTweets: [] });
       }
     } catch { chunk.forEach(h => result.set(h, emptyMetrics())); }
