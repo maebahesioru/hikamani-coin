@@ -358,7 +358,7 @@ export async function loadHandles(): Promise<string[]> {
 
 
 // Batch momentum: 50人ずつまとめてYahoo APIを叩く
-export async function getBatchMomentum(screenNames: string[], hours = 24): Promise<Map<string, TweetMetrics>> {
+export async function getBatchMomentum(screenNames: string[]): Promise<Map<string, TweetMetrics>> {
   const result = new Map<string, TweetMetrics>();
   const chunkSize = 150;
   const chunks: string[][] = [];
@@ -368,8 +368,7 @@ export async function getBatchMomentum(screenNames: string[], hours = 24): Promi
 
   await Promise.all(chunks.map(async (chunk, idx) => {
     const query = "(" + chunk.map(h => `ID:${h}`).join(" OR ") + ")";
-    const since = Math.floor(Date.now() / 1000) - hours * 3600;
-    const params = new URLSearchParams({ p: query, md: "h", results: "40", since: String(since) });
+    const params = new URLSearchParams({ p: query, md: "t", results: "40" });
     try {
       const res = await fetch(`${YAHOO_API}?${params}`, {
         headers: { ...YAHOO_HEADERS, "User-Agent": randomUA() },
